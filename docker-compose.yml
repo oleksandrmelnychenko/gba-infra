@@ -29,11 +29,27 @@ services:
       start_period: 30s
     logging: *default-logging
 
-  typesense:
-    image: typesense/typesense:27.1
-    command: ["--data-dir", "/data", "--api-key", "gba-search-secret-key", "--enable-cors"]
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      xpack.security.enrollment.enabled: "false"
+      cluster.name: gba-search
+      bootstrap.memory_lock: "true"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     volumes:
-      - typesense-data:/data
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     logging: *default-logging
 
   data-concord:
@@ -80,7 +96,7 @@ services:
       context: ../gba-ecommerce-api
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
-      Typesense__Url: "http://typesense:8108"
+      Elasticsearch__Url: "http://elasticsearch:9200"
     secrets:
       - source: ConnectionStrings__RemoteConnectionString
         target: ConnectionStrings:RemoteConnectionString
@@ -88,13 +104,11 @@ services:
         target: ConnectionStrings:RemoteIdentityConnectionString
       - source: ConnectionStrings__LocalConnectionString
         target: ConnectionStrings:LocalConnectionString
-      - source: Typesense__ApiKey
-        target: Typesense:ApiKey
     depends_on:
       gba-mssql:
         condition: service_healthy
-      typesense:
-        condition: service_started
+      elasticsearch:
+        condition: service_healthy
     logging: *default-logging
 
   gba-client:
@@ -111,4 +125,4 @@ services:
 
 volumes:
   mssql-data:
-  typesense-data:
+  elasticsearch-data:

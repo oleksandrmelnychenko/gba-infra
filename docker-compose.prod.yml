@@ -1,5 +1,5 @@
 # PROD overlay — only Caddy is exposed to the host (80/443, TLS).
-# APIs, DB and Typesense stay on the internal network.
+# APIs, DB and Elasticsearch stay on the internal network.
 #   docker compose -p gba-prod -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
 
 x-logging: &default-logging
@@ -13,7 +13,7 @@ services:
   gba-mssql:
     restart: always
 
-  typesense:
+  elasticsearch:
     restart: always
 
   data-concord:
@@ -74,8 +74,6 @@ secrets:
     file: ./secrets/prod/ConnectionStrings__RemoteConnectionString
   ConnectionStrings__RemoteIdentityConnectionString:
     file: ./secrets/prod/ConnectionStrings__RemoteIdentityConnectionString
-  Typesense__ApiKey:
-    file: ./secrets/prod/Typesense__ApiKey
 
 volumes:
   mssql-data:
