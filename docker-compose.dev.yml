@@ -1,0 +1,71 @@
+# DEV overlay — host ports exposed for direct access/debugging.
+# Reuses the existing external gba-mssql-data volume (restored databases).
+#   docker compose -p gba-dev -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.dev up -d
+
+services:
+
+  gba-mssql:
+    ports:
+      - "1433:1433"
+    restart: unless-stopped
+
+  typesense:
+    ports:
+      - "8108:8108"
+    restart: unless-stopped
+
+  data-concord:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "35981:35981"
+    restart: unless-stopped
+
+  data-analytics:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "35982:35982"
+    restart: unless-stopped
+
+  gba-ecommerce-api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "62506:62506"
+    restart: unless-stopped
+
+  gba-client:
+    environment:
+      SERVER_URL: "http://localhost:35981/"
+      SERVER_URL_V2: "http://localhost:35982/"
+    ports:
+      - "8082:80"
+    restart: unless-stopped
+
+  gba-ecommerce:
+    environment:
+      SERVER_URL: "http://localhost:62506/"
+      SERVER_URL_V2: "http://localhost:35982/"
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+
+secrets:
+  ConnectionStrings__LocalConnectionString:
+    file: ./secrets/dev/ConnectionStrings__LocalConnectionString
+  ConnectionStrings__LocalIdentityConnectionString:
+    file: ./secrets/dev/ConnectionStrings__LocalIdentityConnectionString
+  ConnectionStrings__LocalConnectionStringDataAnalitic:
+    file: ./secrets/dev/ConnectionStrings__LocalConnectionStringDataAnalitic
+  ConnectionStrings__RemoteConnectionString:
+    file: ./secrets/dev/ConnectionStrings__RemoteConnectionString
+  ConnectionStrings__RemoteIdentityConnectionString:
+    file: ./secrets/dev/ConnectionStrings__RemoteIdentityConnectionString
+  Typesense__ApiKey:
+    file: ./secrets/dev/Typesense__ApiKey
+
+volumes:
+  mssql-data:
+    name: gba-mssql-data
+    external: true

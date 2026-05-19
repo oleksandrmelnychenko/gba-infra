@@ -1,0 +1,12 @@
+# environment files — real values, never commit
+.env
+.env.dev
+.env.prod
+
+# Docker secret files — real values, never commit
+secrets/dev/
+secrets/prod/
+
+# Caddy runtime data
+caddy/data/
+caddy/config/

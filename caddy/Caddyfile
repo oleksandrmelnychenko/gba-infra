@@ -1,0 +1,24 @@
+crm.{$PROD_DOMAIN} {
+	tls internal
+	reverse_proxy gba-client:80
+}
+
+shop.{$PROD_DOMAIN} {
+	tls internal
+	reverse_proxy gba-ecommerce:80
+}
+
+api.{$PROD_DOMAIN} {
+	tls internal
+	reverse_proxy data-concord:35981
+}
+
+analytics.{$PROD_DOMAIN} {
+	tls internal
+	reverse_proxy data-analytics:35982
+}
+
+ecom-api.{$PROD_DOMAIN} {
+	tls internal
+	reverse_proxy gba-ecommerce-api:62506
+}

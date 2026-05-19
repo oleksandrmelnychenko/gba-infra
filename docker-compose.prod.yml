@@ -1,0 +1,84 @@
+# PROD overlay — only Caddy is exposed to the host (80/443, TLS).
+# APIs, DB and Typesense stay on the internal network.
+#   docker compose -p gba-prod -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+
+  gba-mssql:
+    restart: always
+
+  typesense:
+    restart: always
+
+  data-concord:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    restart: always
+
+  data-analytics:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    restart: always
+
+  gba-ecommerce-api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    restart: always
+
+  gba-client:
+    environment:
+      SERVER_URL: "https://api.${PROD_DOMAIN}/"
+      SERVER_URL_V2: "https://analytics.${PROD_DOMAIN}/"
+    restart: always
+
+  gba-ecommerce:
+    environment:
+      SERVER_URL: "https://ecom-api.${PROD_DOMAIN}/"
+      SERVER_URL_V2: "https://analytics.${PROD_DOMAIN}/"
+    restart: always
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PROD_DOMAIN: ${PROD_DOMAIN}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - gba-client
+      - gba-ecommerce
+      - data-concord
+      - data-analytics
+      - gba-ecommerce-api
+    logging: *default-logging
+
+secrets:
+  ConnectionStrings__LocalConnectionString:
+    file: ./secrets/prod/ConnectionStrings__LocalConnectionString
+  ConnectionStrings__LocalIdentityConnectionString:
+    file: ./secrets/prod/ConnectionStrings__LocalIdentityConnectionString
+  ConnectionStrings__LocalConnectionStringDataAnalitic:
+    file: ./secrets/prod/ConnectionStrings__LocalConnectionStringDataAnalitic
+  ConnectionStrings__RemoteConnectionString:
+    file: ./secrets/prod/ConnectionStrings__RemoteConnectionString
+  ConnectionStrings__RemoteIdentityConnectionString:
+    file: ./secrets/prod/ConnectionStrings__RemoteIdentityConnectionString
+  Typesense__ApiKey:
+    file: ./secrets/prod/Typesense__ApiKey
+
+volumes:
+  mssql-data:
+    name: gba-prod-mssql-data
+  caddy-data:
+  caddy-config:
