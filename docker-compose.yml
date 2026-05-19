@@ -104,6 +104,12 @@ services:
         target: ConnectionStrings:RemoteIdentityConnectionString
       - source: ConnectionStrings__LocalConnectionString
         target: ConnectionStrings:LocalConnectionString
+      - source: Security__JwtKey
+        target: Security:JwtKey
+      - source: Security__PriceEncryptionKey
+        target: Security:PriceEncryptionKey
+      - source: Security__PriceEncryptionIV
+        target: Security:PriceEncryptionIV
     depends_on:
       gba-mssql:
         condition: service_healthy

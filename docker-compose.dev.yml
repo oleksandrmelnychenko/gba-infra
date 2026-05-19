@@ -62,6 +62,12 @@ secrets:
     file: ./secrets/dev/ConnectionStrings__RemoteConnectionString
   ConnectionStrings__RemoteIdentityConnectionString:
     file: ./secrets/dev/ConnectionStrings__RemoteIdentityConnectionString
+  Security__JwtKey:
+    file: ./secrets/dev/Security__JwtKey
+  Security__PriceEncryptionKey:
+    file: ./secrets/dev/Security__PriceEncryptionKey
+  Security__PriceEncryptionIV:
+    file: ./secrets/dev/Security__PriceEncryptionIV
 
 volumes:
   mssql-data:
