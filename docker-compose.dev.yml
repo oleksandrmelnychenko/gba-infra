@@ -6,17 +6,38 @@ services:
 
   gba-mssql:
     ports:
-      - "1433:1433"
+      - "127.0.0.1:1433:1433"
     restart: unless-stopped
 
   elasticsearch:
     ports:
-      - "9200:9200"
+      - "127.0.0.1:9200:9200"
     restart: unless-stopped
 
   data-concord:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      Security__JwtIssuer: "ConcordCRM"
+      Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
+      GBA_CRM_SERVER_URL: "https://gba-api-dev.85.17.167.167.nip.io"
+      GBA_ECOMMERCE_CLIENT_URL: "https://shop-dev.85.17.167.167.nip.io"
+      Security__CorsOrigins__0: "http://localhost:3000"
+      Security__CorsOrigins__1: "http://localhost:7000"
+      Security__CorsOrigins__2: "http://localhost:8081"
+      Security__CorsOrigins__3: "http://localhost:8082"
+      Security__CorsOrigins__4: "http://127.0.0.1:3000"
+      Security__CorsOrigins__5: "http://127.0.0.1:7000"
+      Security__CorsOrigins__6: "http://127.0.0.1:8081"
+      Security__CorsOrigins__7: "http://127.0.0.1:8082"
+      Security__CorsOrigins__8: "http://85.17.167.167:8081"
+      Security__CorsOrigins__9: "http://85.17.167.167:8082"
+      Security__CorsOrigins__10: "http://shop-dev.85.17.167.167.nip.io"
+      Security__CorsOrigins__11: "http://gba-dev.85.17.167.167.nip.io"
+      Security__CorsOrigins__12: "https://shop-dev.85.17.167.167.nip.io"
+      Security__CorsOrigins__13: "https://gba-dev.85.17.167.167.nip.io"
+    volumes:
+      - ../gba-server/src/Global.Business.Assistant.Api/Data:/app/Data
+      - ../gba-server/src/Global.Business.Assistant.Api/Images:/app/Images
     ports:
       - "35981:35981"
     restart: unless-stopped
@@ -24,6 +45,22 @@ services:
   data-analytics:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      Security__JwtIssuer: "ConcordCRM"
+      Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
+      Security__CorsOrigins__0: "http://localhost:3000"
+      Security__CorsOrigins__1: "http://localhost:7000"
+      Security__CorsOrigins__2: "http://localhost:8081"
+      Security__CorsOrigins__3: "http://localhost:8082"
+      Security__CorsOrigins__4: "http://127.0.0.1:3000"
+      Security__CorsOrigins__5: "http://127.0.0.1:7000"
+      Security__CorsOrigins__6: "http://127.0.0.1:8081"
+      Security__CorsOrigins__7: "http://127.0.0.1:8082"
+      Security__CorsOrigins__8: "http://85.17.167.167:8081"
+      Security__CorsOrigins__9: "http://85.17.167.167:8082"
+      Security__CorsOrigins__10: "http://shop-dev.85.17.167.167.nip.io"
+      Security__CorsOrigins__11: "http://gba-dev.85.17.167.167.nip.io"
+      Security__CorsOrigins__12: "https://shop-dev.85.17.167.167.nip.io"
+      Security__CorsOrigins__13: "https://gba-dev.85.17.167.167.nip.io"
     ports:
       - "35982:35982"
     restart: unless-stopped
@@ -31,24 +68,51 @@ services:
   gba-ecommerce-api:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      Security__JwtIssuer: "ConcordCRM"
+      Security__JwtAudience: "https://ecom-api-dev.85.17.167.167.nip.io/"
+      Security__CorsOrigins__0: "http://localhost:3000"
+      Security__CorsOrigins__1: "http://localhost:7000"
+      Security__CorsOrigins__2: "http://localhost:8081"
+      Security__CorsOrigins__3: "http://127.0.0.1:3000"
+      Security__CorsOrigins__4: "http://127.0.0.1:7000"
+      Security__CorsOrigins__5: "http://127.0.0.1:8081"
+      Security__CorsOrigins__6: "https://new.concord-shop.com"
+      Security__CorsOrigins__7: "http://85.17.167.167:8081"
+      Security__CorsOrigins__8: "http://85.17.167.167:8082"
+      Security__CorsOrigins__9: "http://shop-dev.85.17.167.167.nip.io"
+      Security__CorsOrigins__10: "http://gba-dev.85.17.167.167.nip.io"
+      Security__CorsOrigins__11: "https://shop-dev.85.17.167.167.nip.io"
+      Security__CorsOrigins__12: "https://gba-dev.85.17.167.167.nip.io"
     ports:
       - "62506:62506"
     restart: unless-stopped
 
   gba-client:
     environment:
-      SERVER_URL: "http://localhost:35981/"
-      SERVER_URL_V2: "http://localhost:35982/"
+      SERVER_URL: "https://gba-api-dev.85.17.167.167.nip.io/"
+      SERVER_URL_V2: "https://gba-analytics-dev.85.17.167.167.nip.io/"
     ports:
       - "8082:80"
     restart: unless-stopped
 
   gba-ecommerce:
+    build:
+      args:
+        API_BASE_URL: "http://gba-ecommerce-api:62506"
+        API_HISTORY_URL: "http://data-analytics:35982"
+        NEXT_PUBLIC_API_BASE_URL: "https://ecom-api-dev.85.17.167.167.nip.io"
+        NEXT_PUBLIC_SITE_URL: "https://shop-dev.85.17.167.167.nip.io"
+        NEXT_PUBLIC_BASE_URL: "https://shop-dev.85.17.167.167.nip.io"
+        NEXT_PUBLIC_STATIC_BASE_URL: "https://gba-api-dev.85.17.167.167.nip.io"
     environment:
-      SERVER_URL: "http://localhost:62506/"
-      SERVER_URL_V2: "http://localhost:35982/"
+      API_BASE_URL: "http://gba-ecommerce-api:62506"
+      API_HISTORY_URL: "http://data-analytics:35982"
+      NEXT_PUBLIC_API_BASE_URL: "https://ecom-api-dev.85.17.167.167.nip.io"
+      NEXT_PUBLIC_SITE_URL: "https://shop-dev.85.17.167.167.nip.io"
+      NEXT_PUBLIC_BASE_URL: "https://shop-dev.85.17.167.167.nip.io"
+      NEXT_PUBLIC_STATIC_BASE_URL: "https://gba-api-dev.85.17.167.167.nip.io"
     ports:
-      - "8081:80"
+      - "8081:3000"
     restart: unless-stopped
 
 secrets:
@@ -68,6 +132,10 @@ secrets:
     file: ./secrets/dev/Security__PriceEncryptionKey
   Security__PriceEncryptionIV:
     file: ./secrets/dev/Security__PriceEncryptionIV
+  Elasticsearch__Password:
+    file: ./secrets/dev/Elasticsearch__Password
+  Elasticsearch__AppPassword:
+    file: ./secrets/dev/Elasticsearch__AppPassword
 
 volumes:
   mssql-data:

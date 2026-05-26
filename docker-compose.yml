@@ -33,8 +33,13 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     environment:
       discovery.type: single-node
-      xpack.security.enabled: "false"
+      action.destructive_requires_name: "true"
+      xpack.security.enabled: "true"
       xpack.security.enrollment.enabled: "false"
+      xpack.security.http.ssl.enabled: "false"
+      xpack.security.transport.ssl.enabled: "false"
+      xpack.security.authc.api_key.enabled: "false"
+      ELASTIC_PASSWORD_FILE: /run/secrets/elastic_password
       cluster.name: gba-search
       bootstrap.memory_lock: "true"
       ES_JAVA_OPTS: "-Xms1g -Xmx1g"
@@ -44,12 +49,36 @@ services:
         hard: -1
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
+    secrets:
+      - source: Elasticsearch__Password
+        target: elastic_password
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:9200/ | grep -q '^401$'"]
       interval: 10s
       timeout: 5s
       retries: 15
       start_period: 30s
+    logging: *default-logging
+
+  elasticsearch-setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    user: "0"
+    entrypoint: ["/bin/sh", "/usr/local/bin/setup-elasticsearch-security.sh"]
+    environment:
+      ELASTICSEARCH_URL: "http://elasticsearch:9200"
+      ELASTIC_APP_USERNAME: "gba_products_app"
+      ELASTIC_APP_ROLE: "gba_products_app"
+    volumes:
+      - ./scripts/setup-elasticsearch-security.sh:/usr/local/bin/setup-elasticsearch-security.sh:ro
+    secrets:
+      - source: Elasticsearch__Password
+        target: elastic_password
+      - source: Elasticsearch__AppPassword
+        target: app_password
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: "no"
     logging: *default-logging
 
   data-concord:
@@ -57,7 +86,7 @@ services:
     build:
       context: ../gba-server
       args:
-        PROJECT: data.concord
+        PROJECT: Global.Business.Assistant.Api
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
     secrets:
@@ -65,6 +94,8 @@ services:
         target: ConnectionStrings:LocalConnectionString
       - source: ConnectionStrings__LocalIdentityConnectionString
         target: ConnectionStrings:LocalIdentityConnectionString
+      - source: Security__JwtKey
+        target: Security:JwtKey
     depends_on:
       gba-mssql:
         condition: service_healthy
@@ -75,7 +106,7 @@ services:
     build:
       context: ../gba-server
       args:
-        PROJECT: data.analytics.concord
+        PROJECT: Global.Business.Assistant.Analytics
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
     secrets:
@@ -85,6 +116,8 @@ services:
         target: ConnectionStrings:LocalConnectionStringDataAnalitic
       - source: ConnectionStrings__LocalIdentityConnectionString
         target: ConnectionStrings:LocalIdentityConnectionString
+      - source: Security__JwtKey
+        target: Security:JwtKey
     depends_on:
       gba-mssql:
         condition: service_healthy
@@ -97,6 +130,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       Elasticsearch__Url: "http://elasticsearch:9200"
+      Elasticsearch__Username: "gba_products_app"
     secrets:
       - source: ConnectionStrings__RemoteConnectionString
         target: ConnectionStrings:RemoteConnectionString
@@ -110,23 +144,33 @@ services:
         target: Security:PriceEncryptionKey
       - source: Security__PriceEncryptionIV
         target: Security:PriceEncryptionIV
+      - source: Elasticsearch__AppPassword
+        target: Elasticsearch:Password
     depends_on:
       gba-mssql:
         condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
+      elasticsearch-setup:
+        condition: service_completed_successfully
+      data-concord:
+        condition: service_started
     logging: *default-logging
 
   gba-client:
     image: gba-client:latest
     build:
       context: ../gba_client
+    depends_on:
+      - data-concord
+      - data-analytics
     logging: *default-logging
 
   gba-ecommerce:
     image: gba-ecommerce:latest
     build:
       context: ../gba_ecommerce
+    depends_on:
+      - gba-ecommerce-api
+      - data-analytics
     logging: *default-logging
 
 volumes:

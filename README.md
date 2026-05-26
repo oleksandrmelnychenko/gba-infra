@@ -48,6 +48,16 @@ docker compose down
 - **Connection strings** are injected as `ConnectionStrings__*` environment
   variables so the application repos' committed `appsettings.json` stay
   untouched. All APIs point at the `gba-mssql` container as `sa`.
+- Elasticsearch security is enabled. The `elastic` superuser password is used
+  only by the one-shot `elasticsearch-setup` service; `gba-ecommerce-api`
+  uses the restricted `gba_products_app` user from
+  `Elasticsearch__AppPassword`.
+- Keep Elasticsearch secret files readable only by the owner
+  (`chmod 600 secrets/<env>/Elasticsearch__*`). Elasticsearch rejects
+  world-readable password files.
+- Elasticsearch destructive wildcard deletes are blocked with
+  `action.destructive_requires_name=true`. Do not publish `9200` or `9300`
+  outside localhost.
 - The `gba-mssql-data` volume is declared **external** — create it (or run
   SQL Server once) before the first `up`, so database data survives
   `docker compose down`.
@@ -55,3 +65,24 @@ docker compose down
   created by the EF Core migrations in `gba-server` — run those against
   `gba-mssql` before the APIs can serve real data.
 - Credentials here are for **local development only**.
+
+## Security checks
+
+Run this after compose changes or a server restart:
+
+```bash
+./scripts/verify-secure-exposure.sh
+```
+
+Expected public ports are only `80`, `443`, and `22`. Development ports
+(`1433`, `35981`, `35982`, `62506`, `8081`, `8082`, `9200`) must bind to
+`127.0.0.1` only.
+
+To re-apply Docker's host firewall guardrail:
+
+```bash
+./scripts/harden-docker-firewall.sh
+```
+
+It adds idempotent `DOCKER-USER` rules that allow only `80/443` from the
+public interface into Docker-published services.

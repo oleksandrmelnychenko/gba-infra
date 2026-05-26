@@ -19,16 +19,30 @@ services:
   data-concord:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      Security__JwtIssuer: "ConcordCRM"
+      Security__JwtAudience: "https://api.${PROD_DOMAIN}/"
+      GBA_CRM_SERVER_URL: "http://localhost:35981"
+      GBA_ECOMMERCE_CLIENT_URL: "https://shop.${PROD_DOMAIN}"
+      Security__CorsOrigins__0: "https://crm.${PROD_DOMAIN}"
+      Security__CorsOrigins__1: "https://shop.${PROD_DOMAIN}"
     restart: always
 
   data-analytics:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      Security__JwtIssuer: "ConcordCRM"
+      Security__JwtAudience: "https://api.${PROD_DOMAIN}/"
+      Security__CorsOrigins__0: "https://crm.${PROD_DOMAIN}"
+      Security__CorsOrigins__1: "https://shop.${PROD_DOMAIN}"
     restart: always
 
   gba-ecommerce-api:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      Security__JwtIssuer: "ConcordCRM"
+      Security__JwtAudience: "https://ecom-api.${PROD_DOMAIN}/"
+      Security__CorsOrigins__0: "https://shop.${PROD_DOMAIN}"
+      Security__CorsOrigins__1: "https://crm.${PROD_DOMAIN}"
     restart: always
 
   gba-client:
@@ -38,9 +52,19 @@ services:
     restart: always
 
   gba-ecommerce:
+    build:
+      args:
+        API_BASE_URL: "http://gba-ecommerce-api:62506"
+        API_HISTORY_URL: "http://data-analytics:35982"
+        NEXT_PUBLIC_API_BASE_URL: "https://ecom-api.${PROD_DOMAIN}"
+        NEXT_PUBLIC_SITE_URL: "https://shop.${PROD_DOMAIN}"
+        NEXT_PUBLIC_BASE_URL: "https://shop.${PROD_DOMAIN}"
     environment:
-      SERVER_URL: "https://ecom-api.${PROD_DOMAIN}/"
-      SERVER_URL_V2: "https://analytics.${PROD_DOMAIN}/"
+      API_BASE_URL: "http://gba-ecommerce-api:62506"
+      API_HISTORY_URL: "http://data-analytics:35982"
+      NEXT_PUBLIC_API_BASE_URL: "https://ecom-api.${PROD_DOMAIN}"
+      NEXT_PUBLIC_SITE_URL: "https://shop.${PROD_DOMAIN}"
+      NEXT_PUBLIC_BASE_URL: "https://shop.${PROD_DOMAIN}"
     restart: always
 
   caddy:
@@ -80,6 +104,10 @@ secrets:
     file: ./secrets/prod/Security__PriceEncryptionKey
   Security__PriceEncryptionIV:
     file: ./secrets/prod/Security__PriceEncryptionIV
+  Elasticsearch__Password:
+    file: ./secrets/prod/Elasticsearch__Password
+  Elasticsearch__AppPassword:
+    file: ./secrets/prod/Elasticsearch__AppPassword
 
 volumes:
   mssql-data:

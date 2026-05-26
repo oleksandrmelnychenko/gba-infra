@@ -5,7 +5,7 @@ crm.{$PROD_DOMAIN} {
 
 shop.{$PROD_DOMAIN} {
 	tls internal
-	reverse_proxy gba-ecommerce:80
+	reverse_proxy gba-ecommerce:3000
 }
 
 api.{$PROD_DOMAIN} {
@@ -21,4 +21,24 @@ analytics.{$PROD_DOMAIN} {
 ecom-api.{$PROD_DOMAIN} {
 	tls internal
 	reverse_proxy gba-ecommerce-api:62506
+}
+
+shop-dev.85.17.167.167.nip.io {
+	reverse_proxy http://85.17.167.167:8081
+}
+
+ecom-api-dev.85.17.167.167.nip.io {
+	reverse_proxy http://85.17.167.167:62506
+}
+
+gba-dev.85.17.167.167.nip.io {
+	reverse_proxy http://85.17.167.167:8082
+}
+
+gba-api-dev.85.17.167.167.nip.io {
+	reverse_proxy http://85.17.167.167:35981
+}
+
+gba-analytics-dev.85.17.167.167.nip.io {
+	reverse_proxy http://85.17.167.167:35982
 }
