@@ -24,21 +24,21 @@ ecom-api.{$PROD_DOMAIN} {
 }
 
 shop-dev.85.17.167.167.nip.io {
-	reverse_proxy http://85.17.167.167:8081
+	reverse_proxy http://host.docker.internal:8081
 }
 
 ecom-api-dev.85.17.167.167.nip.io {
-	reverse_proxy http://85.17.167.167:62506
+	reverse_proxy http://host.docker.internal:62506
 }
 
 gba-dev.85.17.167.167.nip.io {
-	reverse_proxy http://85.17.167.167:8082
+	reverse_proxy http://host.docker.internal:8082
 }
 
 gba-api-dev.85.17.167.167.nip.io {
-	reverse_proxy http://85.17.167.167:35981
+	reverse_proxy http://host.docker.internal:35981
 }
 
 gba-analytics-dev.85.17.167.167.nip.io {
-	reverse_proxy http://85.17.167.167:35982
+	reverse_proxy http://host.docker.internal:35982
 }

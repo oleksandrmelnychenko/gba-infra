@@ -75,6 +75,8 @@ services:
       - "443:443"
     environment:
       PROD_DOMAIN: ${PROD_DOMAIN}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
