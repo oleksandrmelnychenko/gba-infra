@@ -126,6 +126,10 @@ secrets:
     file: ./secrets/dev/ConnectionStrings__RemoteConnectionString
   ConnectionStrings__RemoteIdentityConnectionString:
     file: ./secrets/dev/ConnectionStrings__RemoteIdentityConnectionString
+  ConnectionStrings__FenixOneCConnectionString:
+    file: ./secrets/dev/ConnectionStrings__FenixOneCConnectionString
+  ConnectionStrings__AmgOneCConnectionString:
+    file: ./secrets/dev/ConnectionStrings__AmgOneCConnectionString
   Security__JwtKey:
     file: ./secrets/dev/Security__JwtKey
   Security__PriceEncryptionKey:

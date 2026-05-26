@@ -94,6 +94,10 @@ services:
         target: ConnectionStrings:LocalConnectionString
       - source: ConnectionStrings__LocalIdentityConnectionString
         target: ConnectionStrings:LocalIdentityConnectionString
+      - source: ConnectionStrings__FenixOneCConnectionString
+        target: ConnectionStrings:FenixOneCConnectionString
+      - source: ConnectionStrings__AmgOneCConnectionString
+        target: ConnectionStrings:AmgOneCConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
     depends_on:
@@ -116,6 +120,10 @@ services:
         target: ConnectionStrings:LocalConnectionStringDataAnalitic
       - source: ConnectionStrings__LocalIdentityConnectionString
         target: ConnectionStrings:LocalIdentityConnectionString
+      - source: ConnectionStrings__FenixOneCConnectionString
+        target: ConnectionStrings:FenixOneCConnectionString
+      - source: ConnectionStrings__AmgOneCConnectionString
+        target: ConnectionStrings:AmgOneCConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
     depends_on:
