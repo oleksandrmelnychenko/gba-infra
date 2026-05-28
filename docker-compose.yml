@@ -146,6 +146,8 @@ services:
         target: ConnectionStrings:RemoteIdentityConnectionString
       - source: ConnectionStrings__LocalConnectionString
         target: ConnectionStrings:LocalConnectionString
+      - source: ConnectionStrings__LocalIdentityConnectionString
+        target: ConnectionStrings:LocalIdentityConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
       - source: Security__PriceEncryptionKey
