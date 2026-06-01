@@ -27,7 +27,7 @@ curl -fsS -u "elastic:${ELASTIC_PASSWORD}" \
     "cluster": ["monitor"],
     "indices": [
       {
-        "names": ["products", "products-*"],
+        "names": ["products", "products_*", "products-*"],
         "privileges": [
           "read",
           "view_index_metadata",
