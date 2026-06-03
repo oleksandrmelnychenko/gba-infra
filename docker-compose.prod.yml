@@ -40,7 +40,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Security__JwtIssuer: "ConcordCRM"
-      Security__JwtAudience: "https://ecom-api.${PROD_DOMAIN}/"
+      Security__JwtAudience: "https://api.${PROD_DOMAIN}/"
       Security__CorsOrigins__0: "https://shop.${PROD_DOMAIN}"
       Security__CorsOrigins__1: "https://crm.${PROD_DOMAIN}"
     restart: always

@@ -79,7 +79,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       Security__JwtIssuer: "ConcordCRM"
-      Security__JwtAudience: "https://ecom-api-dev.85.17.167.167.nip.io/"
+      Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
       Security__CorsOrigins__0: "http://localhost:3000"
       Security__CorsOrigins__1: "http://localhost:7000"
       Security__CorsOrigins__2: "http://localhost:8081"
