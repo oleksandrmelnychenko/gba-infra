@@ -15,12 +15,16 @@ services:
     restart: unless-stopped
 
   data-concord:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
       GBA_CRM_SERVER_URL: "https://gba-api-dev.85.17.167.167.nip.io"
       GBA_ECOMMERCE_CLIENT_URL: "https://shop-dev.85.17.167.167.nip.io"
+      RecommendationApi__Url: "http://host.docker.internal:8000"
+      GbaNbaApi__Url: "http://host.docker.internal:8002"
       Security__CorsOrigins__0: "http://localhost:3000"
       Security__CorsOrigins__1: "http://localhost:7000"
       Security__CorsOrigins__2: "http://localhost:8081"
