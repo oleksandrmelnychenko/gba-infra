@@ -25,6 +25,13 @@ services:
       GBA_ECOMMERCE_CLIENT_URL: "https://shop.${PROD_DOMAIN}"
       Security__CorsOrigins__0: "https://crm.${PROD_DOMAIN}"
       Security__CorsOrigins__1: "https://shop.${PROD_DOMAIN}"
+    secrets: !override
+      - source: ConnectionStrings__LocalConnectionString
+        target: ConnectionStrings:LocalConnectionString
+      - source: ConnectionStrings__LocalIdentityConnectionString
+        target: ConnectionStrings:LocalIdentityConnectionString
+      - source: Security__JwtKey
+        target: Security:JwtKey
     restart: always
 
   data-analytics:
@@ -34,6 +41,15 @@ services:
       Security__JwtAudience: "https://api.${PROD_DOMAIN}/"
       Security__CorsOrigins__0: "https://crm.${PROD_DOMAIN}"
       Security__CorsOrigins__1: "https://shop.${PROD_DOMAIN}"
+    secrets: !override
+      - source: ConnectionStrings__LocalConnectionString
+        target: ConnectionStrings:LocalConnectionString
+      - source: ConnectionStrings__LocalConnectionStringDataAnalitic
+        target: ConnectionStrings:LocalConnectionStringDataAnalitic
+      - source: ConnectionStrings__LocalIdentityConnectionString
+        target: ConnectionStrings:LocalIdentityConnectionString
+      - source: Security__JwtKey
+        target: Security:JwtKey
     restart: always
 
   gba-ecommerce-api:
