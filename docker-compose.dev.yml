@@ -47,6 +47,8 @@ services:
     volumes:
       - ../gba-server/src/Global.Business.Assistant.Api/Data:/app/Data
       - ../gba-server/src/Global.Business.Assistant.Api/Images:/app/Images
+      - ../gba-server/src/Global.Business.Assistant.Api/Logs:/app/Logs
+      - aspnet-dataprotection-keys-dev:/root/.aspnet/DataProtection-Keys
     ports:
       - "35981:35981"
     restart: unless-stopped
@@ -77,6 +79,8 @@ services:
       Security__CorsOrigins__18: "https://gba-console-dev.85.17.167.167.nip.io"
     ports:
       - "35982:35982"
+    volumes:
+      - aspnet-dataprotection-keys-dev:/root/.aspnet/DataProtection-Keys
     restart: unless-stopped
 
   gba-ecommerce-api:
@@ -172,3 +176,4 @@ volumes:
   mssql-data:
     name: gba-mssql-data
     external: true
+  aspnet-dataprotection-keys-dev:

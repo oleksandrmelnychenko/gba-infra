@@ -32,6 +32,11 @@ services:
         target: ConnectionStrings:LocalIdentityConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
+    volumes:
+      - data-concord-logs:/app/Logs
+      - data-concord-data:/app/Data
+      - data-concord-images:/app/Images
+      - aspnet-dataprotection-keys:/root/.aspnet/DataProtection-Keys
     restart: always
 
   data-analytics:
@@ -50,6 +55,9 @@ services:
         target: ConnectionStrings:LocalIdentityConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
+    volumes:
+      - data-analytics-logs:/app/Logs
+      - aspnet-dataprotection-keys:/root/.aspnet/DataProtection-Keys
     restart: always
 
   gba-ecommerce-api:
@@ -132,3 +140,8 @@ volumes:
     name: gba-prod-mssql-data
   caddy-data:
   caddy-config:
+  data-concord-logs:
+  data-concord-data:
+  data-concord-images:
+  data-analytics-logs:
+  aspnet-dataprotection-keys:
