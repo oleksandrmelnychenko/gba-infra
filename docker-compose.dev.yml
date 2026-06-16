@@ -29,6 +29,7 @@ services:
       GbaNbaApi__TimeoutSeconds: "120"
       ProcurementApi__Url: "http://host.docker.internal:8001"
       SolvencyApi__Url: "http://host.docker.internal:8003"
+      PricingApi__Url: "http://host.docker.internal:8004"
       Security__CorsOrigins__0: "http://localhost:3000"
       Security__CorsOrigins__1: "http://localhost:7000"
       Security__CorsOrigins__2: "http://localhost:8081"
