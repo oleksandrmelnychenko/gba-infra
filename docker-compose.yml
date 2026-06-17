@@ -92,6 +92,8 @@ services:
     secrets:
       - source: ConnectionStrings__LocalConnectionString
         target: ConnectionStrings:LocalConnectionString
+      - source: ConnectionStrings__LocalConnectionStringDataAnalitic
+        target: ConnectionStrings:LocalConnectionStringDataAnalitic
       - source: ConnectionStrings__LocalIdentityConnectionString
         target: ConnectionStrings:LocalIdentityConnectionString
       - source: ConnectionStrings__FenixOneCConnectionString
