@@ -17,12 +17,17 @@ services:
     restart: always
 
   data-concord:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://api.${PROD_DOMAIN}/"
       GBA_CRM_SERVER_URL: "http://localhost:35981"
       GBA_ECOMMERCE_CLIENT_URL: "https://shop.${PROD_DOMAIN}"
+      ForecastApi__Url: "${FORECAST_API_URL:-http://host.docker.internal:8006}"
+      ForecastApi__ApiKey: "${FORECAST_API_KEY:?FORECAST_API_KEY is required for sales prediction}"
+      ForecastApi__TimeoutSeconds: "${FORECAST_API_TIMEOUT_SECONDS:-30}"
       Security__CorsOrigins__0: "https://crm.${PROD_DOMAIN}"
       Security__CorsOrigins__1: "https://shop.${PROD_DOMAIN}"
     secrets: !override

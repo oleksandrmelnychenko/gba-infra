@@ -28,6 +28,7 @@ projects/
 | `gba-ecommerce-api` | 62506 | E-commerce API                      |
 | `gba-mssql`         | 1433  | SQL Server 2022                     |
 | `gba-typesense`     | 8108  | Search engine                       |
+| `gba-forecast`      | 8006  | Host-run sales forecast service     |
 
 ## Usage
 
@@ -65,6 +66,9 @@ docker compose down
   created by the EF Core migrations in `gba-server` — run those against
   `gba-mssql` before the APIs can serve real data.
 - Credentials here are for **local development only**.
+- In production, `FORECAST_API_KEY` in `.env.prod` must match
+  `INTERNAL_API_KEY` in `/root/projects/gba-forecast/.env`; otherwise
+  `/sales/prediction/get` returns `503 ai_auth_misconfigured`.
 
 ## Security checks
 
