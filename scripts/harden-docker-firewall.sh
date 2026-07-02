@@ -28,4 +28,7 @@ iptables -C DOCKER-USER -i "$iface" -j DROP 2>/dev/null \
 iptables -C DOCKER-USER -j RETURN 2>/dev/null \
   || iptables -A DOCKER-USER -j RETURN
 
-echo "Docker firewall hardened on ${iface}: container ingress is limited to 80/443 and established egress replies."
+iptables -C INPUT -i "$iface" -p tcp --dport 8000:8006 -j DROP 2>/dev/null \
+  || iptables -I INPUT 1 -i "$iface" -p tcp --dport 8000:8006 -j DROP
+
+echo "Docker firewall hardened on ${iface}: container ingress is limited to 80/443, host AI ports 8000-8006 are dropped from ${iface}, established egress replies allowed."
