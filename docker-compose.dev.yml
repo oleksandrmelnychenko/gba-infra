@@ -30,6 +30,7 @@ services:
       GbaNbaApi__TimeoutSeconds: "120"
       ProcurementApi__Url: "http://host.docker.internal:8001"
       ProcurementApi__ApiKey: "procure_dev_internal_256b79d05d690ef9"
+      ProcurementApi__TimeoutSeconds: "120"
       SolvencyApi__Url: "http://host.docker.internal:8003"
       SolvencyApi__ApiKey: "solvency_dev_internal_2f57866cba8cf297"
       PricingApi__Url: "http://host.docker.internal:8004"
