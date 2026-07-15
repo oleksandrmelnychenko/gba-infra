@@ -23,7 +23,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://api.${PROD_DOMAIN}/"
-      GBA_CRM_SERVER_URL: "http://localhost:35981"
+      GBA_CRM_SERVER_URL: "https://api.${PROD_DOMAIN}"
       GBA_ECOMMERCE_CLIENT_URL: "https://shop.${PROD_DOMAIN}"
       ForecastApi__Url: "${FORECAST_API_URL:-http://host.docker.internal:8006}"
       ForecastApi__ApiKey: "${FORECAST_API_KEY:?FORECAST_API_KEY is required for sales prediction}"
@@ -39,6 +39,8 @@ services:
         target: ConnectionStrings:LocalIdentityConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
+      - source: EcommerceInternalAuth__ApiKey
+        target: EcommerceInternalAuth:ApiKey
     volumes:
       - data-concord-logs:/app/Logs
       - data-concord-data:/app/Data
@@ -141,6 +143,8 @@ secrets:
     file: ./secrets/prod/Elasticsearch__Password
   Elasticsearch__AppPassword:
     file: ./secrets/prod/Elasticsearch__AppPassword
+  EcommerceInternalAuth__ApiKey:
+    file: ./secrets/prod/EcommerceInternalAuth__ApiKey
 
 volumes:
   mssql-data:

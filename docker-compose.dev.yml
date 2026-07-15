@@ -188,6 +188,8 @@ secrets:
     file: ./secrets/dev/Elasticsearch__Password
   Elasticsearch__AppPassword:
     file: ./secrets/dev/Elasticsearch__AppPassword
+  EcommerceInternalAuth__ApiKey:
+    file: ./secrets/dev/EcommerceInternalAuth__ApiKey
 
 volumes:
   mssql-data:

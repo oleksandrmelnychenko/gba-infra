@@ -102,6 +102,8 @@ services:
         target: ConnectionStrings:AmgOneCConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
+      - source: EcommerceInternalAuth__ApiKey
+        target: EcommerceInternalAuth:ApiKey
     depends_on:
       gba-mssql:
         condition: service_healthy
@@ -147,6 +149,8 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       Elasticsearch__Url: "http://elasticsearch:9200"
       Elasticsearch__Username: "gba_products_app"
+      SearchSync__Enabled: "${ECOMMERCE_SEARCH_SYNC_ENABLED:-true}"
+      SalesMutationOutbox__AllowedInternalBaseUri: "http://data-concord:35981"
     secrets:
       - source: ConnectionStrings__RemoteConnectionString
         target: ConnectionStrings:RemoteConnectionString
@@ -164,13 +168,21 @@ services:
         target: Security:PriceEncryptionIV
       - source: Elasticsearch__AppPassword
         target: Elasticsearch:Password
+      - source: EcommerceInternalAuth__ApiKey
+        target: EcommerceInternalAuth:ApiKey
     depends_on:
       gba-mssql:
         condition: service_healthy
       elasticsearch-setup:
         condition: service_completed_successfully
       data-concord:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:62506/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
     logging: *default-logging
 
   gba-client:
