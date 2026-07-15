@@ -89,6 +89,12 @@ services:
         PROJECT: Global.Business.Assistant.Api
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      Maintenance__Enabled: ${DATA_CONCORD_MAINTENANCE_ENABLED:-false}
+      Maintenance__CutoverId: ${DATA_CONCORD_MAINTENANCE_CUTOVER_ID:-}
+      Maintenance__QaEnabled: ${DATA_CONCORD_QA_ENABLED:-false}
+      Maintenance__QaAllowedUserNetIds: ${DATA_CONCORD_QA_ALLOWED_USER_NET_IDS:-}
+      SchedulerTasks__SchedulingEnabled: ${DATA_CONCORD_SCHEDULER_TASKS_ENABLED:-true}
+      BackgroundWriters__Enabled: ${DATA_CONCORD_BACKGROUND_WRITERS_ENABLED:-true}
     secrets:
       - source: ConnectionStrings__LocalConnectionString
         target: ConnectionStrings:LocalConnectionString
