@@ -142,6 +142,10 @@ services:
     ports:
       - "8083:80"
     restart: unless-stopped
+    # nginx консолі проксіює на data-analytics: без запущеного контейнера upstream
+    # не резолвиться і nginx падає в рестарт-цикл одразу на старті.
+    depends_on:
+      - data-analytics
 
   gba-ecommerce:
     build:
