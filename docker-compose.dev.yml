@@ -25,6 +25,7 @@ services:
       GBA_ECOMMERCE_CLIENT_URL: "https://shop-dev.85.17.167.167.nip.io"
       RecommendationApi__Url: "http://host.docker.internal:8000"
       RecommendationApi__ApiKey: "reco_dev_internal_a463145706c67aa1"
+      RecommendationApi__TimeoutSeconds: "120"
       GbaNbaApi__Url: "http://host.docker.internal:8002"
       GbaNbaApi__ApiKey: "nba_dev_internal_8f3c1a9e6b2d4f70"
       GbaNbaApi__TimeoutSeconds: "120"
