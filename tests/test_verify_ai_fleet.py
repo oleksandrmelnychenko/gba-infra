@@ -54,6 +54,44 @@ def exact_solvency_charts() -> dict:
     }
 
 
+def exact_solvency_health(status: str = "degraded") -> dict:
+    return {
+        "status": status,
+        "serving_ready": True,
+        "business_ready": True,
+        "db_connected": True,
+        "redis_connected": True,
+        "synthetic_drift_ok": True,
+        "source_history_start": "2025-01-01",
+        "source_history_contract_ready": True,
+        "source": {
+            "business_ready": True,
+            "source_history_start": "2025-01-01",
+        },
+        "model_readiness": {
+            "current_state": {
+                "ready": True,
+                "reason": None,
+                "training_run_id": "current-test",
+            },
+            "forward_6m": {
+                "ready": False,
+                "status": "unavailable",
+                "reason": "insufficient_unique_positive_clients",
+                "source_history_start": "2025-01-01",
+                "observed_unique_positive_clients": 3,
+                "minimum_unique_positive_clients": 30,
+                "observed_positive_rows": 19,
+                "dataset_sha256": "a" * 64,
+                "evaluated_at": "2026-07-25T13:19:35+00:00",
+            },
+        },
+        "model_drift": {"drift_level": "ok", "psi_score": 0.01},
+        "version": "0.1.0",
+        "model_version": "creditscore-v3",
+    }
+
+
 class HttpSecurityTests(unittest.TestCase):
     def test_remote_http_is_rejected_while_loopback_http_is_allowed(self) -> None:
         self.assertEqual(
@@ -245,6 +283,150 @@ class HealthContractTests(unittest.TestCase):
         )
 
         self.assertIn("status must be 'ready'", errors)
+
+    def test_solvency_accepts_exact_degraded_forward_support_state(self) -> None:
+        errors, details = gate.validate_health(
+            "solvency",
+            exact_solvency_health(),
+        )
+
+        self.assertEqual([], errors)
+        self.assertTrue(details["serving_ready"])
+        self.assertTrue(details["current_model_ready"])
+        self.assertFalse(details["forward_model_ready"])
+        self.assertEqual("unavailable", details["forward_model_status"])
+
+    def test_solvency_ready_accepts_same_unsupported_forward_model(self) -> None:
+        errors, details = gate.validate_health(
+            "solvency",
+            exact_solvency_health(status="ready"),
+            ready=True,
+        )
+
+        self.assertEqual([], errors)
+        self.assertEqual("ready", details["status"])
+        self.assertEqual("2025-01-01", details["source_history_start"])
+
+    def test_degraded_status_remains_rejected_for_every_other_service(self) -> None:
+        for service in ("reco", "procure", "nba", "pricing", "products", "forecast"):
+            payload = exact_solvency_health()
+            errors, _ = gate.validate_health(service, payload)
+            with self.subTest(service=service):
+                self.assertIn("status must be 'healthy'", errors)
+
+    def test_solvency_degraded_rejects_nonserving_current_state(self) -> None:
+        payload = exact_solvency_health()
+        payload["serving_ready"] = False
+
+        errors, _ = gate.validate_health("solvency", payload)
+
+        self.assertIn("status must be 'healthy'", errors)
+        self.assertIn("serving_ready must be true", errors)
+
+    def test_solvency_degraded_rejects_unready_current_model(self) -> None:
+        payload = exact_solvency_health()
+        payload["model_readiness"]["current_state"]["ready"] = False
+
+        errors, _ = gate.validate_health("solvency", payload)
+
+        self.assertIn("status must be 'healthy'", errors)
+        self.assertIn("model_readiness.current_state.ready must be true", errors)
+
+    def test_solvency_degraded_rejects_available_forward_model(self) -> None:
+        payload = exact_solvency_health()
+        payload["model_readiness"]["forward_6m"] = {
+            "ready": True,
+            "status": "available",
+            "reason": None,
+        }
+
+        errors, _ = gate.validate_health("solvency", payload)
+
+        self.assertIn("status must be 'healthy'", errors)
+        self.assertIn(
+            "degraded solvency requires an explicitly unsupported forward_6m model",
+            errors,
+        )
+
+    def test_solvency_degraded_rejects_arbitrary_unavailable_reason_or_status(
+        self,
+    ) -> None:
+        mutations = (
+            ("status", "broken"),
+            ("reason", "artifact_missing"),
+            ("ready", None),
+        )
+        for field_name, value in mutations:
+            payload = exact_solvency_health()
+            payload["model_readiness"]["forward_6m"][field_name] = value
+            errors, _ = gate.validate_health("solvency", payload)
+            with self.subTest(field_name=field_name, value=value):
+                self.assertIn("status must be 'healthy'", errors)
+                self.assertIn(
+                    "degraded solvency requires an explicitly unsupported forward_6m model",
+                    errors,
+                )
+
+    def test_solvency_degraded_rejects_invalid_insufficient_support_evidence(
+        self,
+    ) -> None:
+        mutations = (
+            ("observed_unique_positive_clients", 30),
+            ("minimum_unique_positive_clients", True),
+            ("observed_positive_rows", -1),
+            ("dataset_sha256", "not-a-sha256"),
+            ("evaluated_at", "2026-07-25T13:19:35"),
+            ("source_history_start", "2025-02-01"),
+        )
+        for field_name, value in mutations:
+            payload = exact_solvency_health()
+            payload["model_readiness"]["forward_6m"][field_name] = value
+            errors, _ = gate.validate_health("solvency", payload)
+            with self.subTest(field_name=field_name, value=value):
+                self.assertIn("status must be 'healthy'", errors)
+                self.assertIn(
+                    "degraded solvency requires an explicitly unsupported forward_6m model",
+                    errors,
+                )
+
+    def test_solvency_ready_never_accepts_degraded_status(self) -> None:
+        errors, _ = gate.validate_health(
+            "solvency",
+            exact_solvency_health(),
+            ready=True,
+        )
+
+        self.assertIn("status must be 'ready'", errors)
+
+    def test_solvency_ready_still_requires_the_history_contract(self) -> None:
+        payload = exact_solvency_health(status="ready")
+        payload["source_history_contract_ready"] = False
+
+        errors, _ = gate.validate_health("solvency", payload, ready=True)
+
+        self.assertIn("source_history_contract_ready must be true", errors)
+
+    def test_solvency_healthy_requires_available_forward_model(self) -> None:
+        payload = exact_solvency_health(status="healthy")
+
+        errors, _ = gate.validate_health("solvency", payload)
+
+        self.assertIn(
+            "model_readiness.forward_6m must be available for healthy solvency",
+            errors,
+        )
+
+    def test_solvency_healthy_accepts_available_forward_model(self) -> None:
+        payload = exact_solvency_health(status="healthy")
+        payload["model_readiness"]["forward_6m"] = {
+            "ready": True,
+            "status": "available",
+            "reason": None,
+        }
+
+        errors, _ = gate.validate_health("solvency", payload)
+
+        self.assertEqual([], errors)
 
     def test_pricing_and_solvency_require_business_source_readiness(self) -> None:
         for service, extra in (

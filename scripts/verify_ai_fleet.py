@@ -325,6 +325,54 @@ def _require_true(
             errors.append(f"{dotted} must be true")
 
 
+def _sha256_hex(value: object) -> bool:
+    if not isinstance(value, str) or len(value) != 64:
+        return False
+    return all(char in "0123456789abcdef" for char in value)
+
+
+def _timezone_aware_iso_timestamp(value: object) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return False
+    return parsed.tzinfo is not None
+
+
+def _solvency_forward_is_available(value: object) -> bool:
+    return (
+        isinstance(value, dict)
+        and value.get("ready") is True
+        and value.get("status") == "available"
+        and value.get("reason") is None
+    )
+
+
+def _solvency_forward_is_explicitly_unsupported(
+    value: object,
+    *,
+    expected_source_history_start: str,
+) -> bool:
+    if not isinstance(value, dict):
+        return False
+    minimum = value.get("minimum_unique_positive_clients")
+    observed = value.get("observed_unique_positive_clients")
+    return (
+        value.get("ready") is False
+        and value.get("status") == "unavailable"
+        and value.get("reason") == "insufficient_unique_positive_clients"
+        and value.get("source_history_start") == expected_source_history_start
+        and _positive_id(minimum)
+        and _nonnegative_int(observed)
+        and observed < minimum
+        and _nonnegative_int(value.get("observed_positive_rows"))
+        and _sha256_hex(value.get("dataset_sha256"))
+        and _timezone_aware_iso_timestamp(value.get("evaluated_at"))
+    )
+
+
 def validate_health(
     service: str,
     payload: object,
@@ -337,8 +385,25 @@ def validate_health(
     if obj is None:
         return errors, {}
 
+    status = obj.get("status")
     expected_status = "ready" if ready else "healthy"
-    if obj.get("status") != expected_status:
+    models = obj.get("model_readiness")
+    current_model = models.get("current_state") if isinstance(models, dict) else None
+    forward_model = models.get("forward_6m") if isinstance(models, dict) else None
+    explicit_forward_unsupported = _solvency_forward_is_explicitly_unsupported(
+        forward_model,
+        expected_source_history_start=expected_source_history_start,
+    )
+    allowed_solvency_degraded = (
+        service == "solvency"
+        and not ready
+        and status == "degraded"
+        and obj.get("serving_ready") is True
+        and isinstance(current_model, dict)
+        and current_model.get("ready") is True
+        and explicit_forward_unsupported
+    )
+    if status != expected_status and not allowed_solvency_degraded:
         errors.append(f"status must be {expected_status!r}")
 
     source_history_start = obj.get("source_history_start")
@@ -482,6 +547,43 @@ def validate_health(
             details["canonical_row_count"] = data.get("canonical_row_count")
             details["history_row_count"] = data.get("history_row_count")
     elif service == "solvency":
+        if obj.get("serving_ready") is not True:
+            errors.append("serving_ready must be true")
+        if not isinstance(models, dict):
+            errors.append("model_readiness must be an object")
+        if not isinstance(current_model, dict):
+            errors.append("model_readiness.current_state must be an object")
+        elif current_model.get("ready") is not True:
+            errors.append("model_readiness.current_state.ready must be true")
+        if not isinstance(forward_model, dict):
+            errors.append("model_readiness.forward_6m must be an object")
+        else:
+            forward_available = _solvency_forward_is_available(forward_model)
+            if ready:
+                if not (forward_available or explicit_forward_unsupported):
+                    errors.append(
+                        "model_readiness.forward_6m must be available or explicitly "
+                        "unsupported on /ready"
+                    )
+            elif status == "healthy" and not forward_available:
+                errors.append(
+                    "model_readiness.forward_6m must be available for healthy solvency"
+                )
+            elif status == "degraded" and not explicit_forward_unsupported:
+                errors.append(
+                    "degraded solvency requires an explicitly unsupported forward_6m model"
+                )
+
+        details["serving_ready"] = obj.get("serving_ready")
+        details["current_model_ready"] = (
+            current_model.get("ready") if isinstance(current_model, dict) else None
+        )
+        details["forward_model_ready"] = (
+            forward_model.get("ready") if isinstance(forward_model, dict) else None
+        )
+        details["forward_model_status"] = (
+            forward_model.get("status") if isinstance(forward_model, dict) else None
+        )
         drift = obj.get("model_drift")
         if not isinstance(drift, dict):
             errors.append("model_drift must be an object")
