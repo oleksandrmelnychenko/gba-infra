@@ -234,7 +234,10 @@ RSYNC_ARGS=(
   --exclude=.pytest_cache/
   --exclude=.mypy_cache/
   --exclude=node_modules/
-  --exclude=data/
+  # Preserve only the runtime data directory at the service root.  An
+  # unanchored ``data/`` pattern also matches publishable source such as
+  # ``app/data/*.py`` and would silently omit database repositories.
+  --exclude=/data/
   --exclude='backup_*/'
   --exclude='*.egg-info/'
   --exclude='*.py[cod]'

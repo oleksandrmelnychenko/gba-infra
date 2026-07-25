@@ -122,6 +122,26 @@ class PublishScriptSafetyTests(unittest.TestCase):
         self.assertTrue((self.monorepo / "gba-reco" / "stale.txt").exists())
 
     def test_apply_deletes_only_service_content_and_preserves_runtime_files(self) -> None:
+        source_repository = self.root / "gba-reco" / "app" / "data" / "repository.py"
+        source_repository.parent.mkdir(parents=True)
+        source_repository.write_text(
+            "SOURCE_HISTORY_START = '2025-01-01'\n", encoding="utf-8"
+        )
+        _run(
+            "git",
+            "add",
+            "-f",
+            "app/data/repository.py",
+            cwd=self.root / "gba-reco",
+        )
+        _run(
+            "git",
+            "commit",
+            "-q",
+            "-m",
+            "track application data repository",
+            cwd=self.root / "gba-reco",
+        )
         runtime_env = self.monorepo / "gba-reco" / ".env"
         runtime_cache = self.monorepo / "gba-reco" / "data" / "cache.bin"
         runtime_env.write_text("SECRET=runtime-only\n", encoding="utf-8")
@@ -140,6 +160,16 @@ class PublishScriptSafetyTests(unittest.TestCase):
             ),
         )
         self.assertEqual("root sentinel\n", (self.monorepo / "README.md").read_text())
+        self.assertEqual(
+            "SOURCE_HISTORY_START = '2025-01-01'\n",
+            (
+                self.monorepo
+                / "gba-reco"
+                / "app"
+                / "data"
+                / "repository.py"
+            ).read_text(encoding="utf-8"),
+        )
         self.assertEqual("SECRET=runtime-only\n", runtime_env.read_text())
         self.assertEqual("runtime cache\n", runtime_cache.read_text())
         self.assertEqual(git_dir_before, (self.monorepo / ".git").stat().st_ino)
