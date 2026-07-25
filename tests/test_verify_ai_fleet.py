@@ -557,6 +557,41 @@ class SemanticContractTests(unittest.TestCase):
         self.assertEqual([], errors)
         self.assertEqual(12, details["months"])
 
+        payload["sales_series"][0].update(
+            {
+                "units": 2.0,
+                "revenue_eur": 47.46,
+                "avg_price_eur": 23.7291,
+            }
+        )
+        errors, _ = gate.validate_product_analytics(
+            payload,
+            product_id=88,
+            expected_as_of="2026-12-25",
+            months=12,
+        )
+        self.assertEqual([], errors)
+
+        payload["sales_series"][0]["avg_price_eur"] = 23.70
+        errors, _ = gate.validate_product_analytics(
+            payload,
+            product_id=88,
+            expected_as_of="2026-12-25",
+            months=12,
+        )
+        self.assertIn(
+            "product analytics sales_series[0].avg_price_eur is not coherent "
+            "with independently rounded revenue_eur / units",
+            errors,
+        )
+        payload["sales_series"][0].update(
+            {
+                "units": 2.3456,
+                "revenue_eur": 12.35,
+                "avg_price_eur": 5.2652,
+            }
+        )
+
         payload["sales_series"][-1]["revenue_eur"] = 12.345
         errors, _ = gate.validate_product_analytics(
             payload,

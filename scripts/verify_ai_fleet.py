@@ -22,7 +22,7 @@ import urllib.request
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime
-from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Callable, Mapping
 from zoneinfo import ZoneInfo
@@ -230,6 +230,38 @@ def _scaled_nonnegative(value: object, scale: str) -> bool:
         return number == number.quantize(Decimal(scale))
     except InvalidOperation:
         return False
+
+
+def _rounded_ratio_is_coherent(
+    *,
+    numerator: Decimal,
+    denominator: Decimal,
+    ratio: Decimal,
+    numerator_quantum: Decimal,
+    denominator_quantum: Decimal,
+    ratio_quantum: Decimal,
+) -> bool:
+    """Check one exact ratio behind three independently rounded JSON values."""
+    if numerator < 0 or denominator <= 0 or ratio < 0:
+        return False
+
+    numerator_half = numerator_quantum / 2
+    denominator_half = denominator_quantum / 2
+    ratio_half = ratio_quantum / 2
+    denominator_min = denominator - denominator_half
+    if denominator_min <= 0:
+        return False
+
+    numerator_min = max(Decimal("0"), numerator - numerator_half)
+    numerator_max = numerator + numerator_half
+    denominator_max = denominator + denominator_half
+    exact_ratio_min = numerator_min / denominator_max
+    exact_ratio_max = numerator_max / denominator_min
+    reported_ratio_min = max(Decimal("0"), ratio - ratio_half)
+    reported_ratio_max = ratio + ratio_half
+    return (
+        reported_ratio_max >= exact_ratio_min and reported_ratio_min <= exact_ratio_max
+    )
 
 
 def _iso_date(value: object) -> date | None:
@@ -1116,17 +1148,17 @@ def validate_product_analytics(
                     f"product analytics sales_series[{index}].avg_price_eur must use price scale"
                 )
             elif (parsed_average := _decimal(average)) is not None:
-                try:
-                    expected_average = (revenue / units).quantize(
-                        Decimal("0.0001"),
-                        rounding=ROUND_HALF_UP,
-                    )
-                except (InvalidOperation, ZeroDivisionError):
-                    expected_average = None
-                if expected_average is None or parsed_average != expected_average:
+                if not _rounded_ratio_is_coherent(
+                    numerator=revenue,
+                    denominator=units,
+                    ratio=parsed_average,
+                    numerator_quantum=Decimal("0.01"),
+                    denominator_quantum=Decimal("0.0001"),
+                    ratio_quantum=Decimal("0.0001"),
+                ):
                     errors.append(
                         f"product analytics sales_series[{index}].avg_price_eur "
-                        "must equal revenue_eur / units"
+                        "is not coherent with independently rounded revenue_eur / units"
                     )
         if (
             _nonnegative_int(order_count)
