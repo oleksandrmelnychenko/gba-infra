@@ -90,3 +90,46 @@ To re-apply Docker's host firewall guardrail:
 
 It adds idempotent `DOCKER-USER` rules that allow only `80/443` from the
 public interface into Docker-published services.
+
+## AI fleet release gate
+
+`scripts/verify_ai_fleet.py` is the fail-closed, read-only promotion gate for all seven AI
+services. It verifies `/health` and `/ready`, strict response identity, exact EUR cents,
+quantity/count invariants, dense product/forecast series, a recent complete NBA generation,
+and an independently generated procurement reconciliation artifact.
+
+First generate the procurement proof from `gba-procure`:
+
+```bash
+.venv/bin/dotenv run -- .venv/bin/python scripts/procure_reconcile.py \
+  --as-of YYYY-MM-DD \
+  --repeat-builds 2 \
+  --output /tmp/gba-procure-reconciliation.json
+```
+
+Then run the fleet gate from this repository with current, known-good fixture identities:
+
+```bash
+AI_FLEET_RECO_CUSTOMER_ID=... \
+AI_FLEET_NBA_MANAGER_ID=... \
+AI_FLEET_NBA_MANAGER_NET_UID=... \
+AI_FLEET_SOLVENCY_CLIENT_ID=... \
+AI_FLEET_SOLVENCY_CLIENT_NET_UID=... \
+AI_FLEET_PRICING_PRODUCT_ID=... \
+AI_FLEET_PRICING_PRODUCT_NET_UID=... \
+AI_FLEET_PRICING_CLIENT_AGREEMENT_NET_UID=... \
+AI_FLEET_PRODUCTS_PRODUCT_ID=... \
+AI_FLEET_FORECAST_CLIENT_NET_ID=... \
+AI_FLEET_FORECAST_PRODUCT_NET_ID=... \
+python3 scripts/verify_ai_fleet.py \
+  --as-of YYYY-MM-DD \
+  --procure-reconciliation /tmp/gba-procure-reconciliation.json \
+  --require-semantic-fixtures
+```
+
+Provide `AI_FLEET_API_KEY`, or a service-specific
+`AI_FLEET_<SERVICE>_API_KEY`, when internal authentication is enabled. Semantic fixtures are
+fail-closed by default; production promotion must keep that default and require exit code `0`.
+For isolated DEV health-check work only, `--allow-missing-semantic-fixtures` (or
+`AI_FLEET_ALLOW_MISSING_SEMANTIC_FIXTURES=1`) explicitly downgrades missing fixtures to skipped.
+Non-loopback service URLs must use HTTPS; HTTP is accepted only for loopback development services.

@@ -10,3 +10,9 @@ secrets/prod/
 # Caddy runtime data
 caddy/data/
 caddy/config/
+
+# Python tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
