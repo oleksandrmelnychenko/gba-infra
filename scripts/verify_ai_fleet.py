@@ -28,6 +28,7 @@ from typing import Any, Callable, Mapping
 from zoneinfo import ZoneInfo
 
 KYIV = ZoneInfo("Europe/Kyiv")
+DEFAULT_SOURCE_HISTORY_START = "2025-01-01"
 JSON_OBJECT = dict[str, Any]
 Validator = Callable[[object], tuple[list[str], JSON_OBJECT]]
 
@@ -41,7 +42,7 @@ class ServiceSpec:
 
 SERVICE_SPECS = (
     ServiceSpec("reco", "http://127.0.0.1:8000", "/ready"),
-    ServiceSpec("procure", "http://127.0.0.1:8001", None),
+    ServiceSpec("procure", "http://127.0.0.1:8001", "/ready"),
     ServiceSpec("nba", "http://127.0.0.1:8002", "/ready"),
     ServiceSpec("solvency", "http://127.0.0.1:8003", "/ready"),
     ServiceSpec("pricing", "http://127.0.0.1:8004", "/ready"),
@@ -325,7 +326,11 @@ def _require_true(
 
 
 def validate_health(
-    service: str, payload: object, *, ready: bool = False
+    service: str,
+    payload: object,
+    *,
+    ready: bool = False,
+    expected_source_history_start: str = DEFAULT_SOURCE_HISTORY_START,
 ) -> tuple[list[str], JSON_OBJECT]:
     errors: list[str] = []
     obj = _object(payload, errors)
@@ -335,6 +340,32 @@ def validate_health(
     expected_status = "ready" if ready else "healthy"
     if obj.get("status") != expected_status:
         errors.append(f"status must be {expected_status!r}")
+
+    source_history_start = obj.get("source_history_start")
+    if source_history_start != expected_source_history_start:
+        errors.append(
+            "source_history_start must equal "
+            f"{expected_source_history_start!r}"
+        )
+    if obj.get("source_history_contract_ready") is not True:
+        errors.append("source_history_contract_ready must be true")
+
+    nested_history_paths = {
+        "procure": "source_readiness.source_history_start",
+        "solvency": "source.source_history_start",
+        "pricing": "source.source_history_start",
+        "products": "stock_source_readiness.source_history_start",
+        "forecast": "data.source_history_start",
+    }
+    nested_history_path = nested_history_paths.get(service)
+    if (
+        nested_history_path is not None
+        and _path(obj, nested_history_path) != expected_source_history_start
+    ):
+        errors.append(
+            f"{nested_history_path} must equal "
+            f"{expected_source_history_start!r}"
+        )
 
     flags: dict[str, tuple[str, ...]] = {
         "reco": ("db_connected", "redis_connected", "business_ready"),
@@ -386,6 +417,7 @@ def validate_health(
         "status": obj.get("status"),
         "version": obj.get("version"),
         "model_version": obj.get("model_version"),
+        "source_history_start": source_history_start,
     }
     if service == "procure":
         canonical_items = obj.get("canonical_cart_items")
@@ -1824,6 +1856,7 @@ def run_gate(
     procurement_artifact: str | None,
     require_fixtures: bool,
     require_nonempty: bool,
+    expected_source_history_start: str = DEFAULT_SOURCE_HISTORY_START,
     client: HttpClient | None = None,
 ) -> JSON_OBJECT:
     started_wall = datetime.now(KYIV)
@@ -1843,7 +1876,11 @@ def run_gate(
                 method="GET",
                 path="/health",
             ),
-            lambda payload, name=spec.name: validate_health(name, payload),
+            lambda payload, name=spec.name: validate_health(
+                name,
+                payload,
+                expected_source_history_start=expected_source_history_start,
+            ),
         )
         checks.append(health_check)
 
@@ -1857,7 +1894,10 @@ def run_gate(
                     path=spec.ready_path or "/ready",
                 ),
                 lambda payload, name=spec.name: validate_health(
-                    name, payload, ready=True
+                    name,
+                    payload,
+                    ready=True,
+                    expected_source_history_start=expected_source_history_start,
                 ),
             )
             checks.append(ready_check)
@@ -1932,6 +1972,7 @@ def run_gate(
         "ok": ok,
         "exit_code": 0 if ok else 1,
         "as_of": expected_as_of,
+        "source_history_start": expected_source_history_start,
         "started_at": started_wall.isoformat(),
         "duration_ms": round((time.monotonic() - started) * 1000, 2),
         "summary": {
@@ -1971,6 +2012,15 @@ def _parser() -> argparse.ArgumentParser:
         help="expected Kyiv business date for reconciliation",
     )
     parser.add_argument(
+        "--source-history-start",
+        default=(
+            os.environ.get("AI_FLEET_SOURCE_HISTORY_START_DATE")
+            or os.environ.get("SOURCE_HISTORY_START_DATE")
+            or DEFAULT_SOURCE_HISTORY_START
+        ),
+        help="required common source-history floor (fixed fleet contract: 2025-01-01)",
+    )
+    parser.add_argument(
         "--procure-reconciliation",
         default=os.environ.get("AI_FLEET_PROCURE_RECONCILIATION_JSON"),
         help="path to a gba-procure reconciliation JSON artifact",
@@ -2008,6 +2058,17 @@ def main(argv: list[str] | None = None) -> int:
         datetime.strptime(args.as_of, "%Y-%m-%d")
     except ValueError:
         parser.error("--as-of must be YYYY-MM-DD")
+    try:
+        source_history_start = date.fromisoformat(args.source_history_start)
+    except (TypeError, ValueError):
+        parser.error("--source-history-start must be YYYY-MM-DD")
+    if source_history_start.isoformat() != args.source_history_start:
+        parser.error("--source-history-start must be YYYY-MM-DD")
+    if args.source_history_start != DEFAULT_SOURCE_HISTORY_START:
+        parser.error(
+            "--source-history-start must equal the fleet contract "
+            f"{DEFAULT_SOURCE_HISTORY_START}"
+        )
     report = run_gate(
         env=os.environ,
         timeout=args.timeout,
@@ -2015,6 +2076,7 @@ def main(argv: list[str] | None = None) -> int:
         procurement_artifact=args.procure_reconciliation,
         require_fixtures=args.require_semantic_fixtures,
         require_nonempty=not args.allow_empty_samples,
+        expected_source_history_start=args.source_history_start,
     )
     encoded = json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True)
     if args.output:

@@ -96,7 +96,28 @@ public interface into Docker-published services.
 `scripts/verify_ai_fleet.py` is the fail-closed, read-only promotion gate for all seven AI
 services. It verifies `/health` and `/ready`, strict response identity, exact EUR cents,
 quantity/count invariants, dense product/forecast series, a recent complete NBA generation,
-and an independently generated procurement reconciliation artifact.
+an independently generated procurement reconciliation artifact, and the common source-history
+floor.
+
+| Service | Default URL | Readiness |
+| --- | --- | --- |
+| reco | `http://127.0.0.1:8000` | `/ready` |
+| procure | `http://127.0.0.1:8001` | `/ready` |
+| nba | `http://127.0.0.1:8002` | `/ready` |
+| solvency | `http://127.0.0.1:8003` | `/ready` |
+| pricing | `http://127.0.0.1:8004` | `/ready` |
+| products | `http://127.0.0.1:8005` | `/ready` |
+| forecast | `http://127.0.0.1:8006` | `/ready` |
+
+The AI processes remain host-run services; this repository's DEV/PROD Compose overlays only
+configure the .NET proxies that consume them. The history-floor gate does not merge environment
+files or change that separation.
+
+The fixed source-history contract is `2025-01-01`. Every health/readiness response must expose
+`source_history_start` with that value and `source_history_contract_ready: true`; services with a
+nested source-readiness object must repeat the same date there. Missing or mismatched values fail
+the gate. `AI_FLEET_SOURCE_HISTORY_START_DATE` (or `--source-history-start`) is an assertion input
+and is rejected if it differs from the fixed contract.
 
 First generate the procurement proof from `gba-procure`:
 
@@ -123,6 +144,7 @@ AI_FLEET_FORECAST_CLIENT_NET_ID=... \
 AI_FLEET_FORECAST_PRODUCT_NET_ID=... \
 python3 scripts/verify_ai_fleet.py \
   --as-of YYYY-MM-DD \
+  --source-history-start 2025-01-01 \
   --procure-reconciliation /tmp/gba-procure-reconciliation.json \
   --require-semantic-fixtures
 ```
@@ -133,3 +155,50 @@ fail-closed by default; production promotion must keep that default and require 
 For isolated DEV health-check work only, `--allow-missing-semantic-fixtures` (or
 `AI_FLEET_ALLOW_MISSING_SEMANTIC_FIXTURES=1`) explicitly downgrades missing fixtures to skipped.
 Non-loopback service URLs must use HTTPS; HTTP is accepted only for loopback development services.
+
+## Safe AI service synchronization
+
+The systemd DEV units execute the standalone trees under `/root/projects/gba-<service>`, while
+`gba-ai-services` is the pushable monorepo. `scripts/publish_gba_ai_services.sh` synchronizes only
+the seven service subdirectories, defaults to a read-only checksum preview, scans publishable files
+for credential-like values, and preserves Git metadata plus ignored runtime state (`.env`, `.venv`,
+`data`, caches). A real sync refuses dirty destinations. Deletes are confined to the selected
+service roots, and pushes use normal fast-forward checks.
+
+When both sides contain work, do not overwrite either side. Merge them as two branches from their
+shared base:
+
+```bash
+# 1. Checkpoint the monorepo fleet work on its own branch/commit.
+git -C /root/projects/gba-ai-services switch -c fleet-history-contract
+git -C /root/projects/gba-ai-services add -A
+git -C /root/projects/gba-ai-services commit -m "feat(ai-fleet): enforce source history contract"
+
+# 2. Import standalone work into a separate clean worktree based on the pre-fleet commit.
+git -C /root/projects/gba-ai-services worktree add \
+  -b standalone-sync /tmp/gba-ai-services-standalone-sync <shared-base-commit>
+GBA_AI_SERVICES_DEST=/tmp/gba-ai-services-standalone-sync \
+  ./scripts/publish_gba_ai_services.sh --to-monorepo --dry-run
+GBA_AI_SERVICES_DEST=/tmp/gba-ai-services-standalone-sync \
+  ./scripts/publish_gba_ai_services.sh --to-monorepo --apply --commit \
+  --message "feat(ai-fleet): import standalone service changes"
+
+# 3. Merge the import branch into the fleet branch and resolve overlapping health/config files.
+git -C /root/projects/gba-ai-services merge standalone-sync
+```
+
+Run all service and fleet-gate tests on the resolved tree before a normal push. In particular,
+verify that all seven services retain `SOURCE_HISTORY_START_DATE=2025-01-01`, and that procurement
+retains `/ready`.
+
+After the combined monorepo commit is final, make local checkpoint commits in every standalone
+repository so their worktrees are clean. Then update the actual systemd runtime copies:
+
+```bash
+./scripts/publish_gba_ai_services.sh --to-standalone --dry-run
+./scripts/publish_gba_ai_services.sh --to-standalone --apply
+```
+
+Review each standalone `git status`, rerun its tests, and only then restart DEV services. Reverse
+sync intentionally has no commit/push option and will refuse a dirty monorepo or dirty standalone
+destination.

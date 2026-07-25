@@ -4,6 +4,8 @@ import json
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
@@ -102,6 +104,90 @@ class HttpSecurityTests(unittest.TestCase):
 
 
 class HealthContractTests(unittest.TestCase):
+    def test_service_ports_and_readiness_routes_cover_the_whole_fleet(self) -> None:
+        self.assertEqual(
+            [
+                ("reco", "http://127.0.0.1:8000", "/ready"),
+                ("procure", "http://127.0.0.1:8001", "/ready"),
+                ("nba", "http://127.0.0.1:8002", "/ready"),
+                ("solvency", "http://127.0.0.1:8003", "/ready"),
+                ("pricing", "http://127.0.0.1:8004", "/ready"),
+                ("products", "http://127.0.0.1:8005", "/ready"),
+                ("forecast", "http://127.0.0.1:8006", "/ready"),
+            ],
+            [
+                (spec.name, spec.default_url, spec.ready_path)
+                for spec in gate.SERVICE_SPECS
+            ],
+        )
+
+    def test_missing_or_mismatched_source_history_contract_is_rejected(self) -> None:
+        base = {
+            "status": "healthy",
+            "db_connected": True,
+            "redis_connected": True,
+            "business_ready": True,
+        }
+
+        missing_errors, _ = gate.validate_health("reco", base)
+        self.assertIn(
+            "source_history_start must equal '2025-01-01'",
+            missing_errors,
+        )
+        self.assertIn(
+            "source_history_contract_ready must be true",
+            missing_errors,
+        )
+
+        mismatch_errors, _ = gate.validate_health(
+            "reco",
+            {
+                **base,
+                "source_history_start": "2025-02-01",
+                "source_history_contract_ready": True,
+            },
+        )
+        self.assertIn(
+            "source_history_start must equal '2025-01-01'",
+            mismatch_errors,
+        )
+
+    def test_nested_source_history_contract_is_rejected_on_mismatch(self) -> None:
+        nested_payloads = {
+            "procure": {
+                "source_readiness": {"source_history_start": "2025-02-01"}
+            },
+            "solvency": {"source": {"source_history_start": "2025-02-01"}},
+            "pricing": {"source": {"source_history_start": "2025-02-01"}},
+            "products": {
+                "stock_source_readiness": {
+                    "source_history_start": "2025-02-01"
+                }
+            },
+            "forecast": {"data": {"source_history_start": "2025-02-01"}},
+        }
+        expected_paths = {
+            "procure": "source_readiness.source_history_start",
+            "solvency": "source.source_history_start",
+            "pricing": "source.source_history_start",
+            "products": "stock_source_readiness.source_history_start",
+            "forecast": "data.source_history_start",
+        }
+        for service, nested in nested_payloads.items():
+            errors, _ = gate.validate_health(
+                service,
+                {
+                    "status": "healthy",
+                    "source_history_start": "2025-01-01",
+                    "source_history_contract_ready": True,
+                    **nested,
+                },
+            )
+            self.assertIn(
+                f"{expected_paths[service]} must equal '2025-01-01'",
+                errors,
+            )
+
     def test_procurement_rejects_old_false_green_health(self) -> None:
         errors, _ = gate.validate_health(
             "procure",
@@ -126,8 +212,11 @@ class HealthContractTests(unittest.TestCase):
                 "db_connected": True,
                 "cache_connected": True,
                 "business_ready": True,
+                "source_history_start": "2025-01-01",
+                "source_history_contract_ready": True,
                 "data": {
                     "source_ready": True,
+                    "source_history_start": "2025-01-01",
                     "source_schema_present": True,
                     "source_exists": True,
                     "source_fresh": True,
@@ -187,6 +276,8 @@ class HealthContractTests(unittest.TestCase):
             "mongo_connected": True,
             "business_ready": True,
             "source_ready": True,
+            "source_history_start": "2025-01-01",
+            "source_history_contract_ready": True,
             "generation_ready": True,
             "manager_count": 2,
             "synthetic_product_count": 1,
@@ -829,6 +920,7 @@ class GateAggregationTests(unittest.TestCase):
 
         self.assertFalse(report["ok"])
         self.assertEqual(1, report["exit_code"])
+        self.assertEqual("2025-01-01", report["source_history_start"])
         self.assertGreater(report["summary"]["checks_failed"], 0)
         pricing = next(
             service for service in report["services"] if service["name"] == "pricing"
@@ -859,6 +951,14 @@ class CliSafetyTests(unittest.TestCase):
             args = gate._parser().parse_args([])
 
         self.assertFalse(args.require_semantic_fixtures)
+
+    def test_source_history_contract_defaults_and_env_are_fixed(self) -> None:
+        with patch.dict(gate.os.environ, {}, clear=True):
+            args = gate._parser().parse_args([])
+        self.assertEqual("2025-01-01", args.source_history_start)
+
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+            gate.main(["--source-history-start", "2025-02-01"])
 
 
 class RepositoryHygieneTests(unittest.TestCase):
