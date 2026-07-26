@@ -158,6 +158,10 @@ services:
         NEXT_PUBLIC_BASE_URL: "https://shop-dev.85.17.167.167.nip.io"
         NEXT_PUBLIC_STATIC_BASE_URL: "https://gba-api-dev.85.17.167.167.nip.io"
     environment:
+      # The storefront decodes the protected price payload server-side, so it needs the same
+      # AES material the API encrypts with — without it every product renders without a price.
+      PRICE_KEY: ${PRICE_ENCRYPTION_KEY}
+      PRICE_IV: ${PRICE_ENCRYPTION_IV}
       API_BASE_URL: "http://gba-ecommerce-api:62506"
       API_HISTORY_URL: "http://data-analytics:35982"
       NEXT_PUBLIC_API_BASE_URL: "https://ecom-api-dev.85.17.167.167.nip.io"
