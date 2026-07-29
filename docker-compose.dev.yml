@@ -162,12 +162,41 @@ services:
       # AES material the API encrypts with — without it every product renders without a price.
       PRICE_KEY: ${PRICE_ENCRYPTION_KEY}
       PRICE_IV: ${PRICE_ENCRYPTION_IV}
+      # Authentication fails closed unless the storefront verifies the exact JWT signing
+      # secret used by the APIs. The value is loaded from the Docker secret by the command
+      # below and is also the documented DEV fallback for stable public price-token sealing.
+      AUTH_JWT_ALGORITHM: "HS256"
+      AUTH_JWT_ISSUER: "ConcordCRM"
+      AUTH_JWT_AUDIENCE: "https://gba-api-dev.85.17.167.167.nip.io/"
+      APP_ALLOWED_ORIGINS: "https://shop-dev.85.17.167.167.nip.io"
+      RATE_LIMIT_CLIENT_IP_HEADER: "x-forwarded-for"
       API_BASE_URL: "http://gba-ecommerce-api:62506"
       API_HISTORY_URL: "http://data-analytics:35982"
       NEXT_PUBLIC_API_BASE_URL: "https://ecom-api-dev.85.17.167.167.nip.io"
       NEXT_PUBLIC_SITE_URL: "https://shop-dev.85.17.167.167.nip.io"
       NEXT_PUBLIC_BASE_URL: "https://shop-dev.85.17.167.167.nip.io"
       NEXT_PUBLIC_STATIC_BASE_URL: "https://gba-api-dev.85.17.167.167.nip.io"
+      IMAGE_SEARCH_MODEL: "claude-sonnet-5"
+    secrets:
+      - source: Security__JwtKey
+        target: StorefrontAuthSecret
+      - source: Storefront__PriceTokenSecret
+        target: StorefrontPriceTokenSecret
+      - source: Anthropic__ApiKey
+        target: AnthropicApiKey
+    # DEV secret files are group-readable by the non-root .NET runtime GID.
+    # Grant the non-root Next.js process the same supplementary group instead
+    # of making the signing secret world-readable or running the app as root.
+    group_add:
+      - "1654"
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        export AUTH_SECRET="$$(cat /run/secrets/StorefrontAuthSecret)"
+        export PRICE_TOKEN_SECRET="$$(cat /run/secrets/StorefrontPriceTokenSecret)"
+        export ANTHROPIC_API_KEY="$$(cat /run/secrets/AnthropicApiKey)"
+        exec node server.js
     ports:
       - "8081:3000"
     restart: unless-stopped
@@ -199,6 +228,10 @@ secrets:
     file: ./secrets/dev/Elasticsearch__AppPassword
   EcommerceInternalAuth__ApiKey:
     file: ./secrets/dev/EcommerceInternalAuth__ApiKey
+  Anthropic__ApiKey:
+    file: ./secrets/dev/Anthropic__ApiKey
+  Storefront__PriceTokenSecret:
+    file: ./secrets/dev/Storefront__PriceTokenSecret
 
 volumes:
   mssql-data:
