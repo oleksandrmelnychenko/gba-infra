@@ -39,6 +39,7 @@ services:
       SolvencyApi__ApiKey: "solvency_dev_internal_2f57866cba8cf297"
       PricingApi__Url: "http://host.docker.internal:8004"
       PricingApi__ApiKey: "pricing_dev_internal_e748d1d1b8488d5f"
+      PricingApi__TimeoutSeconds: "120"
       ProductsApi__Url: "http://host.docker.internal:8005"
       ProductsApi__ApiKey: "products_dev_internal_afd06ae3637fbac9"
       ProductsApi__TimeoutSeconds: "60"
