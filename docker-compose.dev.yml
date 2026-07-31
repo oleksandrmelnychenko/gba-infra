@@ -17,6 +17,9 @@ services:
   data-concord:
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    secrets:
+      - source: ConnectionStrings__VehicleRegistryConnectionString
+        target: ConnectionStrings:VehicleRegistryConnectionString
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       Security__JwtIssuer: "ConcordCRM"
@@ -202,6 +205,8 @@ services:
     restart: unless-stopped
 
 secrets:
+  ConnectionStrings__VehicleRegistryConnectionString:
+    file: ./secrets/dev/ConnectionStrings__VehicleRegistryConnectionString
   ConnectionStrings__LocalConnectionString:
     file: ./secrets/dev/ConnectionStrings__LocalConnectionString
   ConnectionStrings__LocalIdentityConnectionString:
