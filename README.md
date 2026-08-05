@@ -44,6 +44,12 @@ docker compose logs -f data-concord
 docker compose down
 ```
 
+For a reproducible teammate handoff, including safe secret templates,
+configuration validation, local endpoints, database expectations, and the
+post-sync reconciliation entry points, use
+[`docs/local-development-handoff.md`](docs/local-development-handoff.md) and
+`scripts/local-dev.sh`.
+
 ## Notes
 
 - **Connection strings** are injected as `ConnectionStrings__*` environment
