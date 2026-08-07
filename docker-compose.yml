@@ -145,6 +145,12 @@ services:
     depends_on:
       gba-mssql:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:35982/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
     logging: *default-logging
 
   gba-ecommerce-api:
@@ -184,7 +190,7 @@ services:
       data-concord:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:62506/health >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:62506/health >/dev/null && curl -fsS http://127.0.0.1:62506/api/v1/uk/elasticsearch/health | grep -q '\"healthy\":true' || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 12
@@ -198,6 +204,12 @@ services:
     depends_on:
       - data-concord
       - data-analytics
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     logging: *default-logging
 
   gba-ecommerce:
