@@ -46,3 +46,10 @@ gba-api-dev.85.17.167.167.nip.io {
 gba-analytics-dev.85.17.167.167.nip.io {
 	reverse_proxy http://host.docker.internal:35982
 }
+
+gba-qa-desk.85.17.167.167.nip.io {
+	basic_auth {
+		gba $2a$14$WgZDg8pqiGq6KsR86/TRJOiuAOQj9HGuZzsOHp4ZJ3rE5gadpjvH.
+	}
+	reverse_proxy http://gba-bug-host-web-1:4000
+}
