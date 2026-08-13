@@ -87,6 +87,8 @@ services:
       context: ../gba-server
       args:
         PROJECT: Global.Business.Assistant.Api
+      labels:
+        gba.git.sha: "${GBA_SERVER_GIT_SHA:-unknown}"
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       Maintenance__Enabled: ${DATA_CONCORD_MAINTENANCE_ENABLED:-false}
@@ -127,6 +129,8 @@ services:
       context: ../gba-server
       args:
         PROJECT: Global.Business.Assistant.Analytics
+      labels:
+        gba.git.sha: "${GBA_SERVER_GIT_SHA:-unknown}"
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
     secrets:
@@ -157,6 +161,8 @@ services:
     image: gba-ecommerce-api:latest
     build:
       context: ../gba-ecommerce-api
+      labels:
+        gba.git.sha: "${GBA_ECOMMERCE_API_GIT_SHA:-unknown}"
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       Elasticsearch__Url: "http://elasticsearch:9200"
@@ -216,6 +222,8 @@ services:
     image: gba-ecommerce:latest
     build:
       context: ../gba_ecommerce
+      labels:
+        gba.git.sha: "${GBA_ECOMMERCE_GIT_SHA:-unknown}"
     depends_on:
       - gba-ecommerce-api
       - data-analytics
