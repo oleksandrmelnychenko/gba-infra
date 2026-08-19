@@ -1,0 +1,166 @@
+# E2E stand — isolated slice next to gba-dev, same MSSQL instance, cloned *_E2E databases.
+#   docker compose -p gba-e2e -f docker-compose.e2e.yml --env-file .env.e2e up -d
+# Standalone on purpose: layering the base file would re-declare dev service names
+# on the shared network and DNS-collide with the live dev stack.
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+
+  data-concord-e2e:
+    image: gba-data-concord:e2e
+    container_name: data-concord-e2e
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Maintenance__Enabled: "false"
+      Maintenance__QaEnabled: "false"
+      SchedulerTasks__SchedulingEnabled: "false"
+      BackgroundWriters__Enabled: "true"
+      GBA_DATASYNC_ALLOW_OUTCOME_SETTLEMENT_BACKFILL: "false"
+      GBA_CONTROL_DATABASE_NAME: "ConcordDb_V5_E2E"
+      Security__JwtIssuer: "ConcordCRM"
+      Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
+      GBA_CRM_SERVER_URL: "http://localhost:8084"
+      GBA_ECOMMERCE_CLIENT_URL: "https://shop-dev.85.17.167.167.nip.io"
+      RecommendationApi__Url: "http://host.docker.internal:8000"
+      RecommendationApi__ApiKey: "reco_dev_internal_a463145706c67aa1"
+      RecommendationApi__TimeoutSeconds: "120"
+      GbaNbaApi__Url: "http://host.docker.internal:8002"
+      GbaNbaApi__ApiKey: "nba_dev_internal_8f3c1a9e6b2d4f70"
+      GbaNbaApi__TimeoutSeconds: "120"
+      ProcurementApi__Url: "http://host.docker.internal:8001"
+      ProcurementApi__ApiKey: "procure_dev_internal_256b79d05d690ef9"
+      ProcurementApi__TimeoutSeconds: "120"
+      SolvencyApi__Url: "http://host.docker.internal:8003"
+      SolvencyApi__ApiKey: "solvency_dev_internal_2f57866cba8cf297"
+      PricingApi__Url: "http://host.docker.internal:8004"
+      PricingApi__ApiKey: "pricing_dev_internal_e748d1d1b8488d5f"
+      PricingApi__TimeoutSeconds: "240"
+      ProductsApi__Url: "http://host.docker.internal:8005"
+      ProductsApi__ApiKey: "products_dev_internal_afd06ae3637fbac9"
+      ProductsApi__TimeoutSeconds: "60"
+      ForecastApi__Url: "http://host.docker.internal:8006"
+      ForecastApi__ApiKey: "forecast_dev_internal_4cb9bb0ca529076d"
+      ForecastApi__TimeoutSeconds: "30"
+      Security__CorsOrigins__0: "http://localhost:8084"
+      Security__CorsOrigins__1: "http://127.0.0.1:8084"
+    secrets:
+      - source: ConnectionStrings__LocalConnectionString
+        target: ConnectionStrings:LocalConnectionString
+      - source: ConnectionStrings__LocalConnectionStringDataAnalitic
+        target: ConnectionStrings:LocalConnectionStringDataAnalitic
+      - source: ConnectionStrings__LocalIdentityConnectionString
+        target: ConnectionStrings:LocalIdentityConnectionString
+      - source: ConnectionStrings__VehicleRegistryConnectionString
+        target: ConnectionStrings:VehicleRegistryConnectionString
+      - source: Security__JwtKey
+        target: Security:JwtKey
+      - source: EcommerceInternalAuth__ApiKey
+        target: EcommerceInternalAuth:ApiKey
+    volumes:
+      - gba-e2e-concord-data:/app/Data
+      - gba-e2e-concord-images:/app/Images
+      - gba-e2e-concord-logs:/app/Logs
+      - gba-e2e-dp-keys:/root/.aspnet/DataProtection-Keys
+    ports:
+      - "127.0.0.1:35991:35981"
+    networks:
+      - default
+      - gba-dev-net
+    mem_limit: 6g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:35981/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    restart: unless-stopped
+    logging: *default-logging
+
+  data-analytics-e2e:
+    image: gba-data-analytics:latest
+    container_name: data-analytics-e2e
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Security__JwtIssuer: "ConcordCRM"
+      Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
+      Security__CorsOrigins__0: "http://localhost:8084"
+      Security__CorsOrigins__1: "http://127.0.0.1:8084"
+    secrets:
+      - source: ConnectionStrings__LocalConnectionString
+        target: ConnectionStrings:LocalConnectionString
+      - source: ConnectionStrings__LocalConnectionStringDataAnalitic
+        target: ConnectionStrings:LocalConnectionStringDataAnalitic
+      - source: ConnectionStrings__LocalIdentityConnectionString
+        target: ConnectionStrings:LocalIdentityConnectionString
+      - source: Security__JwtKey
+        target: Security:JwtKey
+    volumes:
+      - gba-e2e-dp-keys:/root/.aspnet/DataProtection-Keys
+    ports:
+      - "127.0.0.1:35994:35982"
+    networks:
+      - default
+      - gba-dev-net
+    mem_limit: 3g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:35982/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    restart: unless-stopped
+    logging: *default-logging
+
+  gba-console-e2e:
+    image: gba-console:e2e
+    container_name: gba-console-e2e
+    environment:
+      API_PROXY_TARGET: "http://data-concord-e2e:35981"
+      API_HISTORY_PROXY_TARGET: "http://data-analytics-e2e:35982"
+    ports:
+      - "127.0.0.1:8084:80"
+    networks:
+      - default
+    depends_on:
+      - data-concord-e2e
+      - data-analytics-e2e
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/build.json || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    logging: *default-logging
+
+secrets:
+  ConnectionStrings__LocalConnectionString:
+    file: ./secrets/e2e/ConnectionStrings__LocalConnectionString
+  ConnectionStrings__LocalConnectionStringDataAnalitic:
+    file: ./secrets/e2e/ConnectionStrings__LocalConnectionStringDataAnalitic
+  ConnectionStrings__LocalIdentityConnectionString:
+    file: ./secrets/e2e/ConnectionStrings__LocalIdentityConnectionString
+  ConnectionStrings__VehicleRegistryConnectionString:
+    file: ./secrets/e2e/ConnectionStrings__VehicleRegistryConnectionString
+  Security__JwtKey:
+    file: ./secrets/dev/Security__JwtKey
+  EcommerceInternalAuth__ApiKey:
+    file: ./secrets/dev/EcommerceInternalAuth__ApiKey
+
+volumes:
+  gba-e2e-concord-data:
+  gba-e2e-concord-images:
+  gba-e2e-concord-logs:
+  gba-e2e-dp-keys:
+
+networks:
+  gba-dev-net:
+    external: true
+    name: gba-dev_default
