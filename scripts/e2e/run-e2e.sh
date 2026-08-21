@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INFRA_ROOT="${INFRA_ROOT:-/root/projects/gba-infra}"
-CONSOLE_ROOT="${CONSOLE_ROOT:-/root/projects/gba_console}"
+CONSOLE_ROOT="${CONSOLE_ROOT:-/root/deploy/gba-console-aug21}"
 ENV_FILE="${ENV_FILE:-/etc/gba-e2e.env}"
 source "$SCRIPT_DIR/lib-e2e-sql.sh"
 e2e_acquire_stand_lock
@@ -45,12 +45,32 @@ SET NOCOUNT ON;
 SELECT CONVERT(nvarchar(4000), value) FROM [ConcordDb_V5_E2E].sys.extended_properties WHERE class = 0 AND name = N'GbaE2EStandDb';
 SQL
 )"
-for image in gba-console:e2e gba-data-concord:e2e; do
-  sha="$(docker image inspect -f '{{ index .Config.Labels "gba.git.sha" }}' "$image" 2>/dev/null || echo unknown)"
-  if [[ -n "$sha" && "$sha" != "unknown" && "$marker" != *"$sha"* ]]; then
+for image in gba-console:e2e-stand gba-data-concord:e2e-stand; do
+  sha="$(docker image inspect -f '{{ index .Config.Labels "gba.git.sha" }}' "$image" 2>/dev/null || true)"
+  if [[ -z "$sha" || "$sha" == "<no value>" ]]; then
+    echo "Image $image is missing the required gba.git.sha label; rebuild it from a clean exact revision." >&2
+    exit 1
+  fi
+  if [[ "$marker" != *"$sha"* ]]; then
     echo "WARN: $image sha $sha differs from the golden marker (stand may lag the images); consider refreshing golden." >&2
   fi
 done
+
+console_checkout_sha="$(git -C "$CONSOLE_ROOT" rev-parse HEAD 2>/dev/null || true)"
+console_image_sha="$(docker image inspect -f '{{ index .Config.Labels "gba.git.sha" }}' gba-console:e2e-stand 2>/dev/null || true)"
+if [[ -z "$console_checkout_sha" ]]; then
+  echo "CONSOLE_ROOT is not a git checkout: $CONSOLE_ROOT" >&2
+  exit 1
+fi
+if [[ -n "$(git -C "$CONSOLE_ROOT" status --porcelain)" ]]; then
+  echo "CONSOLE_ROOT must be clean before an E2E run: $CONSOLE_ROOT" >&2
+  exit 1
+fi
+if [[ "$console_checkout_sha" != "$console_image_sha" ]]; then
+  echo "Console checkout/image mismatch: checkout=$console_checkout_sha image=$console_image_sha" >&2
+  echo "Rebuild gba-console:e2e-stand from CONSOLE_ROOT before running Playwright." >&2
+  exit 1
+fi
 
 echo "== stand up"
 "${compose[@]}" up -d --wait

@@ -6,10 +6,10 @@
 
 | Сервіс | Порт | Призначення |
 |---|---|---|
-| `gba-console-e2e` | 127.0.0.1:8084 | консоль (той самий образ `gba-console:latest`), проксі на e2e-бекенди |
+| `gba-console-e2e` | 127.0.0.1:8084 | консоль (`gba-console:e2e-stand` із exact git-SHA), проксі на e2e-бекенди |
 | `data-concord-e2e` | 127.0.0.1:35991 | API (`gba-data-concord:**e2e**` — патч env-конфіг control-БД), шедулери OFF, background writers ON |
 
-> **Образ `gba-data-concord:e2e`**: бек хардкодив `IF DB_NAME() <> N'ConcordDb_V5' THROW` у лізі реконсиляції консигнацій (`ProductIncomeRepository`, 54603), що валило оприходування/продаж/повернення на `_E2E`-базі. Патч робить імʼя контрольної БД env-конфігурованим (`GBA_CONTROL_DATABASE_NAME`, дефолт `ConcordDb_V5` — dev не змінюється). Стенд ставить `GBA_CONTROL_DATABASE_NAME=ConcordDb_V5_E2E`. Перезбирати образ після змін бекенду: `cd /root/projects/gba-server && docker build --build-arg PROJECT=Global.Business.Assistant.Api -t gba-data-concord:e2e .`. **Застереження**: `CaptureStockSnapshotActor` (54602) досі хардкодить `ConcordDb_V5`, але він scheduler-gated — НЕ вмикати шедулери на e2e-стенді.
+> **Образ `gba-data-concord:e2e-stand`**: бек хардкодив `IF DB_NAME() <> N'ConcordDb_V5' THROW` у лізі реконсиляції консигнацій (`ProductIncomeRepository`, 54603), що валило оприходування/продаж/повернення на `_E2E`-базі. Патч робить імʼя контрольної БД env-конфігурованим (`GBA_CONTROL_DATABASE_NAME`, дефолт `ConcordDb_V5` — dev не змінюється). Стенд ставить `GBA_CONTROL_DATABASE_NAME=ConcordDb_V5_E2E`. Перезбирати образ після змін бекенду з exact label: `cd /root/projects/gba-server && docker build --label gba.git.sha="$(git rev-parse HEAD)" --build-arg PROJECT=Global.Business.Assistant.Api -t gba-data-concord:e2e-stand .`. **Застереження**: `CaptureStockSnapshotActor` (54602) досі хардкодить `ConcordDb_V5`, але він scheduler-gated — НЕ вмикати шедулери на e2e-стенді.
 | `data-analytics-e2e` | 127.0.0.1:35994 | history/report (35992 зайнятий `reports-v9-analytics`) |
 
 БД на `gba-dev-gba-mssql-1`: `ConcordDb_V5_E2E`, `ConcordIdentityDb_E2E`, `ConcordDb_Data_E2E`, `GbaVehicleRegistry_E2E`. Кожна позначена extended property `GbaE2EStandDb`; усі скрипти стенда відмовляються працювати з БД без суфікса `_E2E` і маркера, і поза інстансом `@@SERVERNAME = 01934d77f334`. Один lifecycle run/reset/golden-refresh додатково тримає міжпроцесний lock `/var/lock/gba-e2e-stand.lock`, тому паралельний reset не може обнулити бази посеред Playwright-прогону.
@@ -27,7 +27,7 @@ docker compose -p gba-e2e -f docker-compose.e2e.yml --env-file .env.e2e up -d --
 - `gen-e2e-secrets.sh` — перегенеровує `secrets/e2e/` з `secrets/dev/` (замінюється тільки `Database=`); ганяти після ротації dev-секретів.
 - `e2e-reset.sh snapshot|revert|status|drop-snapshots` — reset-механіка: снапшоти всіх 4 БД і відкат (~30 с: стоп e2e-бекендів → SINGLE_USER → RESTORE FROM SNAPSHOT → старт → health). Revert вимагає рівно один снапшот на БД. `revert --prune-uploads` додатково чистить файловий volume `/app/Data` (БД-відкат файли не чіпає). Якщо revert упав між стопом і стартом — бекенди лишаються зупинені; наступний успішний revert або `up -d` їх підніме.
 - `seed-e2e-user.sh` — скидає пароль `admin.local@gba.test` ТІЛЬКИ в `ConcordIdentityDb_E2E` і пише креди в `/etc/gba-e2e.env` (0600). Після нього перезняти снапшоти (`drop-snapshots` + `snapshot`), щоб пароль пережив reverts.
-- `run-e2e.sh smoke|full|--spec <path>` — оркестратор: preflight (порти, БД+маркери, один снапшот, warn при дрифті git-sha образів проти golden-маркера) → `up --wait` → revert → Playwright → архів звіту в `gba_console/output/e2e-reports/<ts>-<mode>/`.
+- `run-e2e.sh smoke|full|--spec <path>` — оркестратор: preflight (порти, БД+маркери, один снапшот, exact SHA й чистота канонічного console checkout, warn при дрифті образів проти golden-маркера) → `up --wait` → revert → Playwright → архів звіту в `gba_console/output/e2e-reports/<ts>-<mode>/`.
 
 ## Playwright (у репо gba_console)
 
@@ -56,7 +56,7 @@ Service має запускати Playwright із канонічного чис�
 ## Відомі деградації (прийнято свідомо)
 
 - AI-панелі консолі ходять у живий фліт (:8000–8006), який читає dev-БД — дані в цих панелях не збігаються зі стендом; сторінки мають деградувати граційно.
-- Бейдж QA Desk (`/qa-desk/api/builds/current`) на стенді віддає 502 — desk недоступний з мережі gba-e2e.
+- Бейдж QA Desk (`/qa-desk/api/builds/current`) доступний через спільну dev-мережу; console лишається одночасно підключеною до ізольованої мережі стенда для backend API.
 - Elasticsearch спільний із dev (шедулери вимкнені, ядро консольних флоу в ES не пише).
 - Файли, створені тестами в `/app/Data`, не відкочуються снапшотом БД (`--prune-uploads` за потреби).
 
@@ -81,7 +81,7 @@ Service має запускати Playwright із канонічного чис�
 - **Формати CCD різні.** AYMEKS має брутто/нетто у колонках 4/5, інші шість fixture — 5/6. Колонка 4 в них є назвою товару й не може передаватися як числова вага.
 - **Великі інвойси потребують масштабованого test timeout.** Розміщення навмисно проходить UI-дровер для кожної позиції; FSS має 106, REMI MAY 122 рядки. Двохвилинний глобальний timeout не є доменним fail.
 - **nginx без `client_max_body_size`** (1 МБ дефолт) → HTTP 413 на великих JSON розміщення/пакліста. Пофікшено в `gba_console/nginx.conf` (64m) — прод-релевантно.
-- **Хардкод `ConcordDb_V5`** у бек-гарді (legacy consignment reconciliation) → env `GBA_CONTROL_DATABASE_NAME` (образ `gba-data-concord:e2e`).
+- **Хардкод `ConcordDb_V5`** у бек-гарді (legacy consignment reconciliation) → env `GBA_CONTROL_DATABASE_NAME` (образ `gba-data-concord:e2e-stand`).
 - **Пошук контрагента (`/clients/all/filtered`)** — це префікс по FullName, не Name/ЄДРПОУ; деякі прізвища колізять (МАМИЧ→МАГРОМ ТОВ). Для юзерів варто перевірити зручність пошуку ФОП.
 
 Останній чистий proof 2026-08-21: smoke `13/13`; повна матриця приходу
@@ -98,4 +98,4 @@ Service має запускати Playwright із канонічного чис�
 
 ## ⚠️ ГОЛОВНИЙ ОПЕРАЦІЙНИЙ УРОК: перебілдовуй e2e-образи після будь-яких змін бекенду
 
-Стара збірка `gba-data-concord:e2e` мовчки ламала пошук повернень (повертав 0 на валідних даних), бо була зібрана зі старого коду gba-server. **Після БУДЬ-ЯКОЇ зміни в gba-server перебілдь ОБИДВА образи** (`gba-data-concord:e2e` через `docker build --build-arg PROJECT=Global.Business.Assistant.Api -t gba-data-concord:e2e .` у чистому server checkout; `gba-console:e2e` у checkout, заданому `CONSOLE_ROOT`) і `docker compose ... up -d --force-recreate`. Обидва образи повинні мати exact `gba.git.sha`; `run-e2e.sh` уже варнить про дрифт проти golden-маркера — не ігноруй.
+Стара збірка backend мовчки ламала пошук повернень (повертала 0 на валідних даних), а спільний тег дозволяв паралельному білду непомітно підмінити образ стенда. Стенд тому використовує окремі теги `gba-data-concord:e2e-stand` і `gba-console:e2e-stand`; звичайні `:e2e` білди їх не перетирають. **Після зміни backend або console перебудуй відповідний stand-образ із `--label gba.git.sha="$(git rev-parse HEAD)"`** і зроби `docker compose ... up -d --force-recreate`. `run-e2e.sh` відмовляється стартувати без exact label і попереджає про розбіжність із golden-маркером.

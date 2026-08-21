@@ -39,8 +39,8 @@ done
 
 docker exec "$SQL_CONTAINER" mkdir -p "$DATA_DIR" "$GOLDEN_BAK_DIR"
 
-console_sha="$(docker image inspect -f '{{ index .Config.Labels "gba.git.sha" }}' gba-console:e2e 2>/dev/null || echo unknown)"
-concord_sha="$(docker image inspect -f '{{ index .Config.Labels "gba.git.sha" }}' gba-data-concord:e2e 2>/dev/null || echo unknown)"
+console_sha="$(docker image inspect -f '{{ index .Config.Labels "gba.git.sha" }}' gba-console:e2e-stand 2>/dev/null || echo unknown)"
+concord_sha="$(docker image inspect -f '{{ index .Config.Labels "gba.git.sha" }}' gba-data-concord:e2e-stand 2>/dev/null || echo unknown)"
 created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 drop_e2e_db() {

@@ -12,7 +12,7 @@ x-logging: &default-logging
 services:
 
   data-concord-e2e:
-    image: gba-data-concord:e2e
+    image: gba-data-concord:e2e-stand
     container_name: data-concord-e2e
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -119,7 +119,7 @@ services:
     logging: *default-logging
 
   gba-console-e2e:
-    image: gba-console:e2e
+    image: gba-console:e2e-stand
     container_name: gba-console-e2e
     environment:
       API_PROXY_TARGET: "http://data-concord-e2e:35981"
@@ -128,6 +128,7 @@ services:
       - "127.0.0.1:8084:80"
     networks:
       - default
+      - gba-dev-net
     depends_on:
       - data-concord-e2e
       - data-analytics-e2e
