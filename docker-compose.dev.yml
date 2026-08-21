@@ -158,7 +158,10 @@ services:
     # nginx консолі проксіює на data-analytics: без запущеного контейнера upstream
     # не резолвиться і nginx падає в рестарт-цикл одразу на старті.
     depends_on:
-      - data-analytics
+      data-concord:
+        condition: service_healthy
+      data-analytics:
+        condition: service_healthy
 
   gba-ecommerce:
     build:
