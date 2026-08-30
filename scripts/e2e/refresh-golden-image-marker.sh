@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INFRA_ROOT="${INFRA_ROOT:-/root/projects/gba-infra}"
-CONSOLE_ROOT="${CONSOLE_ROOT:-/root/deploy/gba-console-aug21}"
+CONSOLE_ROOT="${CONSOLE_ROOT:-/root/projects/gba_console}"
 source "$SCRIPT_DIR/lib-e2e-sql.sh"
 e2e_acquire_stand_lock
 

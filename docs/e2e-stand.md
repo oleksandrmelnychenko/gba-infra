@@ -47,7 +47,7 @@ systemctl daemon-reload && systemctl enable --now gba-e2e-nightly.timer
 ```
 
 Service має запускати Playwright із канонічного чистого checkout, зараз це
-`CONSOLE_ROOT=/root/deploy/gba-console-aug21`. Не спрямовувати nightly на тимчасовий
+`CONSOLE_ROOT=/root/projects/gba_console`. Не спрямовувати nightly на тимчасовий
 або dirty worktree: застосунок у контейнері та тести на host повинні мати один git SHA.
 
 ## Освіження golden
