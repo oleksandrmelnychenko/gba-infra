@@ -29,3 +29,19 @@ Verification receipts and deployment status are recorded in
 `/root/evidence/report-port-wave4-2026-09-07/REPORT.md` after live acceptance.
 This is one native current-stock delivery, not full functional or numerical
 parity with the 377-entry 1C catalogue or historical warehouse reports.
+
+Live acceptance completed: both target services are healthy and Data Concord
+retains its initial container. The combined native suite passed 246/246 without
+skips, console reports 165/165, builds and ESLint passed, and React Doctor stayed
+at 90/100. Actual stock XLSX/PDF exports covered all 15 warehouses / 36 unit
+groups, exact warehouse/unit filters and an empty result; all 73 independent
+source aggregates matched. The previous three datasets and the separately
+confirmed negative return retained their verified quantities and monetary rules.
+
+The browser workflow passed private-template save/reload/update/delete, exact
+lookups, period switching, three measures in all three chart types and actual
+XLSX/CSV round-trip. Mixed physical/free totals remain blank while the independently
+confirmed reserve total remains 1. Final authenticated GET confirms the exact
+test template is absent and the baseline is preserved. Concurrent server commit
+`a6a88bbc2` was retained through merge `1f270eceb`; its changes are diagnostics
+and documentation, with the runtime source tree identical to image `cf06b8ea9`.
