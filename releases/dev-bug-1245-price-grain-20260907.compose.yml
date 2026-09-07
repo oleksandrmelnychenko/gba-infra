@@ -1,0 +1,3 @@
+services:
+  data-analytics:
+    image: gba-data-analytics:bug-1245-price-grain-d0f42310
