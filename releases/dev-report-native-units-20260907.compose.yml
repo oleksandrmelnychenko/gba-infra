@@ -1,0 +1,10 @@
+# Append to each service's active DEV compose files; recreate only the named service.
+# Preserves the deployed native price groupings, AI fleet and cost-coverage overlays.
+# No database migration or source-data repair.
+services:
+  data-analytics:
+    # Runtime source 6d252727f: unit grouping 28 and exact filter 20; price 26/27 retained.
+    image: gba-data-analytics:report-native-units-6d252727
+  gba-console:
+    # Source cb9527ca: unit-aware presets, lookup, templates, charts and CSV totals.
+    image: gba-console:report-native-units-cb9527ca
