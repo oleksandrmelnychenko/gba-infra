@@ -1,0 +1,6 @@
+# Console-only DEV release from gba-console main at ef544985.
+# Append after the active report-workspace overlays, then recreate only
+# `gba-console` with `up -d --no-deps --no-build gba-console`.
+services:
+  gba-console:
+    image: gba-console:main-ef544985
