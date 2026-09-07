@@ -121,3 +121,21 @@ def test_current_manual_request_forces_a_new_verified_cycle(tmp_path):
     assert set(calls) == set(refresh.STAGES)
     assert calls[0] == "nba_feedback" and calls[-1] == "nba"
     assert state["status"] == "complete"
+
+
+def test_loss_floor_uses_minimum_price_attainable_with_cent_percent_discount():
+    import verify_ai_fleet as gate
+    uid = "11111111-1111-1111-1111-111111111111"
+    payload = {"product_id": 5, "product_net_uid": uid, "client_agreement_netuid": uid,
+               "currency": "EUR", "as_of_date": "2026-09-07", "model_version": "pricing-ab-v3-coherent-discount",
+               "baseline_price": 85000.0, "recommended_price": 89609.10, "price_floor": 89600.0,
+               "unit_cost_eur": 80000.0, "discount_base_price": 99999.0, "suggested_discount_pct": 10.39,
+               "discount_band": {"min_pct": 0.0, "target_pct": 10.39, "max_pct": 10.39},
+               "peer_band": {"p25": None, "p50": None, "p75": None, "n": 0},
+               "elastic_optimal_price": None, "rationale": "below-margin-loss-flag"}
+    def validate():
+        return gate.validate_pricing(payload, product_id=5, product_net_uid=uid,
+                                     agreement_net_uid=uid, expected_as_of="2026-09-07")[0]
+    assert validate() == []
+    payload["discount_band"]["max_pct"] = 10.40
+    assert validate()  # Reject an arbitrary higher price when a lower feasible one exists.

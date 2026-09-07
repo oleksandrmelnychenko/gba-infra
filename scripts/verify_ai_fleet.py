@@ -1052,8 +1052,17 @@ def validate_pricing(
         if money["recommended_price"] > money["baseline_price"]:
             allowed_loss_flag = (
                 money.get("price_floor", Decimal("-1")) > money["baseline_price"]
-                and money["recommended_price"] == money["price_floor"]
                 and obj.get("rationale") == "below-margin-loss-flag"
+                and (
+                    money["recommended_price"] == money["price_floor"]
+                    or (
+                        str(obj.get("model_version", "")).startswith("pricing-ab-v3")
+                        and money["recommended_price"] >= money["price_floor"]
+                        and isinstance(obj.get("discount_band"), dict)
+                        and obj.get("suggested_discount_pct") is not None
+                        and obj["suggested_discount_pct"] == obj["discount_band"].get("max_pct")
+                    )
+                )
             )
             if not allowed_loss_flag:
                 errors.append(

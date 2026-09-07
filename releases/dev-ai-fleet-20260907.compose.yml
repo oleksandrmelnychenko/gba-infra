@@ -2,7 +2,7 @@
 # gba-console with up -d --no-deps --no-build after building these exact images.
 services:
   data-concord:
-    image: gba-data-concord:ai-fleet-20260907-v2
+    image: gba-data-concord:ai-fleet-20260907-v3
     environment:
       GBA_AI_FLEET_STATE_DIRECTORY: /app/AiFleet
     volumes:
