@@ -1,0 +1,9 @@
+# Append to each service's current DEV release overlays. No environment/schema changes.
+# Recreate only data-concord, data-analytics and gba-console, using --no-deps --no-build.
+services:
+  data-concord:
+    image: gba-data-concord:bug-1245-native-boundary-188d5fc9
+  data-analytics:
+    image: gba-data-analytics:bug-1245-native-boundary-188d5fc9
+  gba-console:
+    image: gba-console:bug-1245-native-boundary-02f64578
