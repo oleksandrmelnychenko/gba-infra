@@ -1,0 +1,6 @@
+# Append to data-concord's current DEV Compose file chain.
+# Analytics already runs byte-identical tested binaries in report-workspace-20260907-v2.
+# Preserve that release and console; no environment, mount, port, schema or sync changes.
+services:
+  data-concord:
+    image: gba-data-concord:bug-1245-stock-verification-16eec91f
