@@ -1,0 +1,8 @@
+# Append to each service's active dev overlays. Recreate only the named services.
+# Requires GBA Concord migration 20260907180000_AddReportUserTemplates.
+# 1C is never modified or contacted by these report-workspace endpoints.
+services:
+  data-analytics:
+    image: gba-data-analytics:report-workspace-20260907
+  gba-console:
+    image: gba-console:report-workspace-20260907
