@@ -50,15 +50,40 @@ The previous `gba-console:bug-1245-20260906` image remains available for rollbac
 article/measure mismatches remain; console deployment does not resolve them.
 The reports continue to use native Operational data for this verification.
 
-## Server mainline decision still required
+## Server mainline transition approved and published — follow-up
 
-Server work is saved locally on `development` as
-`18012a9393bb652d0aa8a10b4470dace47967692`, including deferred experimental work.
-It has not been pushed or deployed as a complete release. Server `main` last
-changed in May; a non-mutating merge preview against the pre-checkpoint
-development tip reported 642 conflicting files. No forced push or automatic
-conflict-resolution policy was used. Replacing the old main tree with current
-development, versus reconciling both sets of changes, needs an explicit decision.
+After the user explicitly approved replacing the old main tree with current
+development while preserving both histories, server `main` was published as
+`c84c42cf11093093645d74d4487a42a9710f4ad3`. Its first parent is the former main,
+`5858412c6a8834e479267473457d9eff9493a6a9`; its second parent is the saved
+development checkpoint, `18012a9393bb652d0aa8a10b4470dace47967692`.
+The merge tree is exactly the development tree
+`659fb677c5119d8b1c1ebf466d54d3df58ddb9a7`. Both ancestry checks and the tree
+identity check passed; the normal push and remote main SHA were verified.
+No force-push, history deletion or implicit 642-file conflict policy was used.
+
+This publishes the source checkpoint, not a new complete backend release.
+The verified live API and Platform.Actors authored source sets are unchanged
+relative to the new main; all five checked live API-release assembly hashes
+match the prior native-cost release receipts. In those five assemblies, the
+remaining source differences are the deferred inventory components, their
+factory contract and migration. This bounded comparison does not cover every
+application assembly. No experimental inventory path or migration was deployed.
+
+Full-main offline dependency restore and the complete Release solution build
+passed: zero warnings/errors, 16m06s. The isolated compiler used the pinned SDK,
+2 CPU and a 16 GiB memory limit; no network or database credentials were passed.
+The API native-repair regression passed 98/98 tests, with no failures or skips.
+Report/worker regression passed 122 tests, with zero failures and two SQL-dependent
+tests skipped because this run intentionally had no database access: 220 passed,
+two skipped in total. Earlier live SQL receipts are separate evidence, not newly
+executed tests of this main build. Existing DEV API/Analytics images remain
+unchanged; build/test success is not a deployment or six-XLS parity claim.
+
+Private host evidence: `server-main-release-build-20260907.log`,
+`server-main-native-source-audit-20260907.json` and
+`test-results/server-main-c84c42cf1-{api,reports}-20260907.trx` under
+`/root/evidence/bug-1245-report-parity/`.
 
 CRM and both ecommerce working trees are clean and match their existing upstream
 branches after fetch. No new versions of those services were deployed.
