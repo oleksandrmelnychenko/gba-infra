@@ -3,8 +3,8 @@
 # No new database migration. Requires the prior ReportUserTemplates migration.
 services:
   data-analytics:
-    # gba-server 4a1e9123d: includes concurrent cost coverage and exact decimal products.
-    image: gba-data-analytics:report-native-wave2-4a1e9123
+    # gba-server 54d351ec7: native datasets, exact decimals and imported return currency proof.
+    image: gba-data-analytics:report-native-wave2-54d351ec
   gba-console:
-    # gba_console bcbc48e4: native datasets, charts and filtered CSV round trips.
-    image: gba-console:report-native-wave2-20260907
+    # gba_console 0f0bbf09: native datasets, merged XLSX metadata, charts and external-port URLs.
+    image: gba-console:report-native-wave2-0f0bbf09
