@@ -1,0 +1,6 @@
+# Append to each target service's actual active Compose chain.
+services:
+  data-analytics:
+    image: gba-data-analytics:report-ordering-14310d3f
+  gba-console:
+    image: gba-console:report-ordering-ae8dff7a
