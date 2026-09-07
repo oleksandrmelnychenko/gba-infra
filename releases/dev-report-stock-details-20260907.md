@@ -27,3 +27,33 @@ connection, source execution, source-data correction or database migration is
 part of this release. Acceptance status and receipts are recorded in
 `/root/evidence/report-port-wave5-2026-09-07/REPORT.md`; a release file alone is
 not evidence that deployment or live acceptance has completed.
+
+## Completed DEV acceptance
+
+Both pinned images were built, deployed and verified healthy. Data Concord kept
+its original container. No source 1C connection, business-data correction,
+database migration or existing database-option change occurred.
+
+The integrated server suite passed 298/298 without skips; console report tests
+passed 208/208, build and lint passed, and React Doctor improved from 90 to 91.
+Independent native controls and generated XLSX reconciled 15,274 physical facts
+across 15 warehouses and 37 location/unit groups with zero mismatches. The exact
+lot retained literal location 0/0/0; the exact ClientAgreement retained quantity
+1 and its negative filter complement was empty. Missing recorded addresses
+remain explicitly unknown, and mixed-unit physical totals remain blank.
+
+Authenticated API acceptance generated seven XLSX/PDF pairs. The browser generated
+four additional XLSX and verified two PDF downloads, exercised both presets,
+exact native pickers, private template save/reload/apply/update/delete, three
+chart types and CSV roundtrips for all four files. An independent final GET
+confirmed all exact owned template identities absent, including initial evidence
+script runs; baseline and final template counts were both zero. Two evidence-only
+assertions were corrected to respect full parent captions and exact numeric
+contract lookup; deployed application code did not require a subsequent change.
+
+Real XLSX/PDF regression checks for datasets 0/2/3/4 preserved unit-specific
+quantities and monetary guards; the confirmed return remained -2 and -85.43 EUR.
+The anonymous catalogue returned 401. Runtime receipts, initial and final logs,
+independent controls and final cleanup evidence are retained in the report above.
+Full historical and monetary parity with the complete 1C catalogue remains
+outside this completed current-detail release.
