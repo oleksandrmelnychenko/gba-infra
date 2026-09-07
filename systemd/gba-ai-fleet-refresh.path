@@ -1,0 +1,9 @@
+[Unit]
+Description=Accept authorized AI fleet refresh requests from the console
+
+[Path]
+PathExists=/var/lib/gba-ai-fleet/requests/refresh.json
+Unit=gba-ai-fleet-refresh.service
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+# Append to the current DEV release overlays. Target only data-concord and
+# gba-console with up -d --no-deps --no-build after building these exact images.
+services:
+  data-concord:
+    image: gba-data-concord:ai-fleet-20260907-v2
+    environment:
+      GBA_AI_FLEET_STATE_DIRECTORY: /app/AiFleet
+    volumes:
+      - /var/lib/gba-ai-fleet:/app/AiFleet:ro
+      - /var/lib/gba-ai-fleet/requests:/app/AiFleet/requests:rw
+  gba-console:
+    image: gba-console:ai-fleet-20260907-v2

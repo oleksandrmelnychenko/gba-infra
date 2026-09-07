@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh the GBA AI fleet every day at 05:00 Kyiv
+
+[Timer]
+OnCalendar=*-*-* 05:00:00 Europe/Kyiv
+Persistent=true
+AccuracySec=1s
+RandomizedDelaySec=0
+Unit=gba-ai-fleet-refresh.service
+
+[Install]
+WantedBy=timers.target

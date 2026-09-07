@@ -1,0 +1,15 @@
+[Unit]
+Description=GBA AI fleet daily data and cache refresh
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/projects/gba-infra
+ExecStart=/usr/bin/python3 /root/projects/gba-infra/scripts/refresh_ai_fleet.py
+TimeoutStartSec=23h
+Restart=on-failure
+RestartSec=5min
+UMask=0077
+

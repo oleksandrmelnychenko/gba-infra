@@ -22,7 +22,7 @@ import urllib.request
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Callable, Mapping
 from zoneinfo import ZoneInfo
@@ -555,8 +555,18 @@ def validate_health(
             errors.append("model_readiness.current_state must be an object")
         elif current_model.get("ready") is not True:
             errors.append("model_readiness.current_state.ready must be true")
-        if not isinstance(forward_model, dict):
-            errors.append("model_readiness.forward_6m must be an object")
+        operational = models.get("operational_90d") if isinstance(models, dict) else None
+        if operational is not None:
+            if not isinstance(operational, dict) or not (
+                operational.get("ready") is True
+                and operational.get("kind") == "deterministic_open_debt_control"
+                and operational.get("horizon_days") == 90
+                and operational.get("threshold_days") == 90
+            ):
+                errors.append("model_readiness.operational_90d must be ready deterministic 90-day debt control")
+            details["operational_90d"] = operational
+        elif not isinstance(forward_model, dict):
+            errors.append("model_readiness.forward_6m or operational_90d must be an object")
         else:
             forward_available = _solvency_forward_is_available(forward_model)
             if ready:
@@ -1011,6 +1021,11 @@ def validate_pricing(
     if not isinstance(obj.get("model_version"), str) or not obj.get("model_version"):
         errors.append("model_version must be non-empty")
 
+    conflict = obj.get("rationale") == "constraints-conflict"
+    advisory = obj.get("rationale") == "below-margin-loss-flag" and obj.get("suggested_discount_pct") is None
+    if conflict and not (obj.get("recommended_price") is None and obj.get("confidence") == "low"
+                         and obj.get("suggested_discount_pct") is None and obj.get("discount_band") is None):
+        errors.append("constraint conflict must have low confidence and no actionable price/discount")
     required_money = (
         "baseline_price",
         "recommended_price",
@@ -1020,6 +1035,8 @@ def validate_pricing(
     money: dict[str, Decimal] = {}
     for name in required_money:
         value = obj.get(name)
+        if name == "recommended_price" and conflict and value is None:
+            continue
         if not _cents(value):
             errors.append(f"{name} must be present as exact non-negative EUR cents")
         elif (parsed := _decimal(value)) is not None:
@@ -1044,25 +1061,37 @@ def validate_pricing(
                     "margin floor with below-margin-loss-flag"
                 )
 
-    discount = obj.get("suggested_discount_pct")
-    if not _finite_number(discount, minimum=Decimal("0")) or (
-        _decimal(discount) is not None and _decimal(discount) > Decimal("100")
-    ):
-        errors.append("suggested_discount_pct must be finite and within 0..100")
-    band = obj.get("discount_band")
-    if not isinstance(band, dict):
-        errors.append("discount_band must be an object")
-    else:
-        values = [
-            _decimal(band.get(key)) for key in ("min_pct", "target_pct", "max_pct")
-        ]
-        if any(value is None for value in values):
-            errors.append("discount_band values must be finite")
+    if not (conflict or advisory):
+        discount = obj.get("suggested_discount_pct")
+        if not _finite_number(discount, minimum=Decimal("0")) or (
+            _decimal(discount) is not None and _decimal(discount) > Decimal("100")
+        ):
+            errors.append("suggested_discount_pct must be finite and within 0..100")
+        band = obj.get("discount_band")
+        if not isinstance(band, dict):
+            errors.append("discount_band must be an object")
         else:
-            if not values[0] <= values[1] <= values[2]:
-                errors.append("discount_band must be monotone")
-            if values[0] < 0 or values[2] > 100:
-                errors.append("discount_band values must be within 0..100")
+            if band.get("target_pct") != discount:
+                errors.append("discount band target must equal suggested discount")
+            values = [
+                _decimal(band.get(key)) for key in ("min_pct", "target_pct", "max_pct")
+            ]
+            if any(value is None for value in values):
+                errors.append("discount_band values must be finite")
+            else:
+                if not values[0] <= values[1] <= values[2]:
+                    errors.append("discount_band must be monotone")
+                if values[0] < 0 or values[2] > 100:
+                    errors.append("discount_band values must be within 0..100")
+        basis = _decimal(obj.get("discount_base_price"))
+        if basis is not None and basis > 0 and _decimal(discount) is not None and "recommended_price" in money:
+            expected = (basis * (1 - _decimal(discount) / 100)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            if abs(expected - money["recommended_price"]) > Decimal("0.01"):
+                errors.append("suggested discount must reproduce recommended price")
+        elif str(obj.get("model_version", "")).startswith("pricing-ab-v3"):
+            errors.append("coherent pricing requires an unrounded positive discount_base_price")
+    elif obj.get("discount_band") is not None:
+        errors.append("non-actionable recommendation must not include a discount band")
 
     peer = obj.get("peer_band")
     if not isinstance(peer, dict):
