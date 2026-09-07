@@ -1,0 +1,10 @@
+# Append to each service's active DEV compose files, then recreate only that service.
+# Existing AI fleet, native cost coverage and other service overlays stay in place.
+# No new database migration. Requires the prior ReportUserTemplates migration.
+services:
+  data-analytics:
+    # gba-server 4a1e9123d: includes concurrent cost coverage and exact decimal products.
+    image: gba-data-analytics:report-native-wave2-4a1e9123
+  gba-console:
+    # gba_console bcbc48e4: native datasets, charts and filtered CSV round trips.
+    image: gba-console:report-native-wave2-20260907
