@@ -1,0 +1,6 @@
+# Append to each target service's actual active Compose chain.
+services:
+  data-analytics:
+    image: gba-data-analytics:stock-lots-3195c00b
+  gba-console:
+    image: gba-console:stock-lots-094cd30e
