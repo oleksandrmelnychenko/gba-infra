@@ -1,0 +1,3 @@
+services:
+  data-analytics:
+    image: gba-data-analytics:bug-1245-sale-count-0774bce3
