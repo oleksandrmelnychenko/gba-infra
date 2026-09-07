@@ -3,4 +3,4 @@ services:
   data-analytics:
     image: gba-data-analytics:native-accounts-b23a14bb
   gba-console:
-    image: gba-console:native-accounts-708c6410
+    image: gba-console:native-accounts-7809e487
