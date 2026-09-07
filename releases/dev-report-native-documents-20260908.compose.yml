@@ -1,0 +1,6 @@
+# Append to each target service's actual active Compose chain.
+services:
+  data-analytics:
+    image: gba-data-analytics:native-documents-54aa0d9f
+  gba-console:
+    image: gba-console:native-documents-2e7c1b51
