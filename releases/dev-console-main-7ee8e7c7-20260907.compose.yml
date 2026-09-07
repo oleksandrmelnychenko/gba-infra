@@ -1,0 +1,6 @@
+# Console-only DEV release from gba-console main at 7ee8e7c7.
+# Append after the existing BUG-1245 and AI-fleet overlays, then target only
+# `gba-console` with `up -d --no-deps --no-build gba-console`.
+services:
+  gba-console:
+    image: gba-console:main-7ee8e7c7
