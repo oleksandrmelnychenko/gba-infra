@@ -1,0 +1,6 @@
+# Append to each target service's actual active Compose chain.
+services:
+  data-analytics:
+    image: gba-data-analytics:agreement-valuation-4cf11008
+  gba-console:
+    image: gba-console:agreement-valuation-024b58a5
