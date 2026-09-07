@@ -1,0 +1,6 @@
+# Append to the actual active Compose chain; recreate only Analytics and console.
+services:
+  data-analytics:
+    image: gba-data-analytics:report-native-stock-cf06b8ea
+  gba-console:
+    image: gba-console:report-native-stock-c47ca7b6
