@@ -1,0 +1,12 @@
+# DEV console-only release from gba-console main at 11675bf4.
+# Combine with docker-compose.yml and docker-compose.dev.yml; always target
+# only `gba-console` with `up -d --no-deps --no-build gba-console`.
+# Does not release the server checkpoint, run migrations, or change business data.
+services:
+  gba-console:
+    image: gba-console:bug-1245-main-11675bf4
+    build:
+      labels:
+        gba.release: bug-1245-main-20260907
+        gba.git.sha: 11675bf423bb3887004b70ba03177e3fb55df9f2
+        org.opencontainers.image.revision: 11675bf423bb3887004b70ba03177e3fb55df9f2
