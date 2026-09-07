@@ -1,0 +1,7 @@
+# Append to each backend service's actual current DEV file chain.
+# Only the tested Persistence DLL/PDB changes; preserve console and all configuration.
+services:
+  data-concord:
+    image: gba-data-concord:bug-1245-cost-coverage-9679420f
+  data-analytics:
+    image: gba-data-analytics:bug-1245-cost-coverage-9679420f
