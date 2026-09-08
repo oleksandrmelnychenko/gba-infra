@@ -1,5 +1,5 @@
 services:
   data-analytics:
-    image: gba-data-analytics:report-client-activity-333582f3
+    image: gba-data-analytics:report-client-activity-bf31fc18
   gba-console:
     image: gba-console:report-client-activity-15b0f1a9
