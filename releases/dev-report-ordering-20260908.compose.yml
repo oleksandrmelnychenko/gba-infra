@@ -3,4 +3,4 @@ services:
   data-analytics:
     image: gba-data-analytics:report-ordering-14310d3f
   gba-console:
-    image: gba-console:report-ordering-ae8dff7a
+    image: gba-console:report-ordering-a073db85
