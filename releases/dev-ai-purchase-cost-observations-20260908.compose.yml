@@ -1,0 +1,12 @@
+# Append to the Analytics service's actual Compose chain. The Python and Concord
+# consumers are released separately after the new plan contract is verified.
+services:
+  data-analytics:
+    image: gba-data-analytics:verified-cost-ed7f0394
+    secrets:
+      - source: ProcureCostInternalAuth__ApiKey
+        target: ProcureCostInternalAuth:ApiKey
+
+secrets:
+  ProcureCostInternalAuth__ApiKey:
+    file: /root/projects/gba-infra/secrets/dev/ProcureCostInternalAuth__ApiKey
