@@ -1,0 +1,6 @@
+# Source16 recorded revenue by exact client agreement; source1C remains read-only.
+services:
+  data-analytics:
+    image: gba-data-analytics:report-revenue-ca5e9f58
+  gba-console:
+    image: gba-console:report-revenue-55e1f91d
