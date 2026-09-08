@@ -1,0 +1,6 @@
+# Append to each target service's actual active Compose chain.
+services:
+  data-analytics:
+    image: gba-data-analytics:report-hide-zero-4d4fc744
+  gba-console:
+    image: gba-console:report-hide-zero-b492947b
