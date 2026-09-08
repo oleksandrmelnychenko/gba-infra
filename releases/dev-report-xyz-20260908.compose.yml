@@ -1,0 +1,5 @@
+services:
+  data-analytics:
+    image: gba-data-analytics:report-xyz-71292877
+  gba-console:
+    image: gba-console:report-xyz-15abcb3e
