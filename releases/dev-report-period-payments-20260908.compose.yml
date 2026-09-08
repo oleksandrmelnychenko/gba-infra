@@ -1,0 +1,5 @@
+services:
+  data-analytics:
+    image: gba-data-analytics:report-period-payments-25990714
+  gba-console:
+    image: gba-console:report-period-payments-d29b6911
