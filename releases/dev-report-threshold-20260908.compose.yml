@@ -1,0 +1,6 @@
+# Append to each target service actual active Compose chain; preserve existing mounts and settings.
+services:
+  data-analytics:
+    image: gba-data-analytics:report-threshold-38f6ef2e
+  gba-console:
+    image: gba-console:report-threshold-5ee8d9fd
