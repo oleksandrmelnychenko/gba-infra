@@ -735,6 +735,18 @@ def validate_nba_inbox(
     return errors, {"manager_id": obj.get("manager_id"), "count": len(rows)}
 
 
+def _validate_solvency_observation(
+    obj: JSON_OBJECT, expected_as_of: str, errors: list[str]
+) -> None:
+    for name, expected in (
+        ("state_basis", "current_observation"),
+        ("business_timezone", "Europe/Kyiv"),
+        ("fx_date", expected_as_of),
+    ):
+        if obj.get(name) != expected:
+            errors.append(f"{name} must equal {expected!r}")
+
+
 def validate_solvency_score(
     payload: object,
     *,
@@ -753,8 +765,9 @@ def validate_solvency_score(
         errors.append("client_net_uid identity mismatch")
     if obj.get("as_of_date") != expected_as_of:
         errors.append(f"as_of_date must equal {expected_as_of}")
-    if obj.get("window_months") != window_months:
-        errors.append("window_months identity mismatch")
+    if obj.get("window_months") != 12 or window_months != 12:
+        errors.append("score window_months must equal the trained 12-month window")
+    _validate_solvency_observation(obj, expected_as_of, errors)
     if not isinstance(obj.get("model_version"), str) or not obj.get("model_version"):
         errors.append("model_version must be non-empty")
     if obj.get("applicable") is not True:
@@ -818,6 +831,9 @@ def validate_solvency_charts(
         errors.append(f"charts.as_of_date must equal {expected_as_of}")
     if obj.get("window_months") != window_months:
         errors.append("charts.window_months identity mismatch")
+    if not _is_strict_int(window_months) or not 1 <= window_months <= 60:
+        errors.append("charts.window_months must be within 1..60")
+    _validate_solvency_observation(obj, expected_as_of, errors)
     if not isinstance(obj.get("model_version"), str) or not obj.get("model_version"):
         errors.append("charts.model_version must be non-empty")
     if obj.get("applicable") is not True:
@@ -954,41 +970,24 @@ def validate_solvency_charts(
                         )
 
     sparkline = obj.get("score_sparkline")
-    expected_starts = _expected_month_starts(expected_as_of, window_months)
-    expected_score_periods = (
-        [value.strftime("%Y-%m") for value in expected_starts]
-        if expected_starts is not None
-        else []
-    )
-    score_periods: list[str] = []
-    if not isinstance(sparkline, list) or not sparkline:
-        errors.append("score_sparkline must be a non-empty array")
-    else:
-        if len(sparkline) != window_months:
-            errors.append("score_sparkline length must equal window_months")
-        for index, row in enumerate(sparkline):
-            if not isinstance(row, dict):
-                errors.append(f"score_sparkline[{index}] must be an object")
-                continue
-            period = row.get("period")
-            if _month_start(period) is None:
-                errors.append(f"score_sparkline[{index}].period must be YYYY-MM")
-            else:
-                score_periods.append(str(period))
-            score = row.get("score")
-            if not _is_strict_int(score) or not 0 <= score <= 100:
-                errors.append(f"score_sparkline[{index}].score must be within 0..100")
-        if score_periods != expected_score_periods:
-            errors.append(
-                "score_sparkline periods must be the exact contiguous requested window"
-            )
+    if not isinstance(sparkline, list) or sparkline:
+        errors.append("score_sparkline must be empty: historical state is not recorded")
+    if obj.get("score_sparkline_status") != "unavailable":
+        errors.append("score_sparkline_status must equal unavailable for the buyer fixture")
+    if obj.get("score_sparkline_reason_code") != "historical_state_not_recorded":
+        errors.append("score_sparkline_reason_code must equal historical_state_not_recorded")
+    reason = obj.get("score_sparkline_reason")
+    if not isinstance(reason, str) or not reason.strip():
+        errors.append("score_sparkline_reason must explain unavailable history")
 
     if obj.get("aging_over_time_heatmap") != "pending":
         errors.append("aging_over_time_heatmap must equal pending")
     return errors, {
         "client_id": obj.get("client_id"),
         "turnover_periods": len(trend_periods or []),
-        "score_periods": len(score_periods),
+        "score_periods": len(sparkline) if isinstance(sparkline, list) else None,
+        "state_basis": obj.get("state_basis"),
+        "score_history_status": obj.get("score_sparkline_status"),
     }
 
 

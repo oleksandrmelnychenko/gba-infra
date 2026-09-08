@@ -41,9 +41,13 @@ def exact_solvency_charts() -> dict:
             {"period": period, "turnover_eur": 100.25, "exposure_eur": 10.25}
             for period in turnover_periods
         ],
-        "score_sparkline": [
-            {"period": period, "score": 80} for period in score_periods
-        ],
+        "score_sparkline": [],
+        "score_sparkline_status": "unavailable",
+        "score_sparkline_reason_code": "historical_state_not_recorded",
+        "score_sparkline_reason": "Historical debt and terms were not recorded.",
+        "state_basis": "current_observation",
+        "business_timezone": "Europe/Kyiv",
+        "fx_date": "2026-12-25",
         "turnover_trend": [
             {"period": period, "turnover_eur": 100.25} for period in turnover_periods
         ],
@@ -494,6 +498,9 @@ class SemanticContractTests(unittest.TestCase):
             "as_of_date": "2026-12-25",
             "window_months": 12,
             "model_version": "creditscore-v3",
+            "state_basis": "current_observation",
+            "business_timezone": "Europe/Kyiv",
+            "fx_date": "2026-12-25",
         }
         charts = exact_solvency_charts()
 
@@ -523,6 +530,41 @@ class SemanticContractTests(unittest.TestCase):
             window_months=12,
         )
         self.assertIn("as_of_date must equal 2026-12-25", score_errors)
+
+    def test_solvency_refuses_legacy_history_and_missing_observation_proof(self) -> None:
+        for field, invalid in (
+            ("score_sparkline", [{"period": "2026-12", "score": 80}]),
+            ("score_sparkline", None),
+            ("score_sparkline_status", "available"),
+            ("score_sparkline_reason_code", "client_not_buyer"),
+            ("score_sparkline_reason", " "),
+            ("state_basis", None),
+            ("business_timezone", "UTC"),
+            ("fx_date", "2026-12-24"),
+        ):
+            with self.subTest(field=field, invalid=invalid):
+                charts = exact_solvency_charts()
+                charts[field] = invalid
+                errors, _ = gate.validate_solvency_charts(charts, client_id=7,
+                    expected_as_of="2026-12-25", window_months=12)
+                self.assertTrue(errors)
+
+    def test_solvency_score_zero_is_real_but_untrained_window_is_rejected(self) -> None:
+        uid = "11111111-1111-1111-1111-111111111111"
+        score = {"client_id": 7, "client_net_uid": uid, "applicable": True,
+            "score": 0, "rating": "D", "pd": 1, "currency_breakdown": [],
+            "as_of_date": "2026-12-25", "window_months": 12, "model_version": "creditscore-v3",
+            "state_basis": "current_observation", "business_timezone": "Europe/Kyiv", "fx_date": "2026-12-25"}
+        def validate(window=12):
+            return gate.validate_solvency_score(score, client_id=7, client_net_uid=uid,
+                expected_as_of="2026-12-25", window_months=window)[0]
+        self.assertEqual([], validate())
+        for field in ("state_basis", "business_timezone", "fx_date"):
+            previous = score.pop(field)
+            self.assertTrue(validate())
+            score[field] = previous
+        score["window_months"] = 1
+        self.assertTrue(validate(1))
 
     def test_solvency_charts_fail_on_missing_empty_or_inexact_proofs(self) -> None:
         missing_gauge = exact_solvency_charts()
