@@ -48,11 +48,33 @@ def refresh(stage: str, as_of: str, token: str) -> dict:
         return result
     if stage == "procure":
         from app.services.replenishment import worker
-        result = worker.run(as_of=as_of, warm_cart_key=False)
-        if result["failed"]:
+        # One worker-owned observation cohort serves all producers and the full
+        # cart; charts reuse that evaluated cart. Separate warm calls would read
+        # and verify every receipt again under a different observation window.
+        result = worker.run(as_of=as_of, warm_cart_key=True)
+        counts = [result.get(name) for name in ("producers", "ok", "failed", "skipped")]
+        if (
+            any(type(value) is not int or value < 0 for value in counts)
+            or result.get("failed") != 0
+            or result.get("ok", 0) + result.get("skipped", 0) != result.get("producers")
+            or result.get("business_ready") is not True
+            or result.get("as_of") != as_of
+        ):
             raise RuntimeError(f"procurement refresh incomplete: {result}")
-        result["cart"] = worker.warm_cart(as_of=as_of)
-        result["charts"] = worker.warm_charts(as_of=as_of)
+        cart, charts = result.get("cart"), result.get("charts")
+        if (
+            not isinstance(cart, dict) or not isinstance(charts, dict)
+            or cart.get("business_ready") is not True
+            or cart.get("as_of") != as_of or charts.get("as_of") != as_of
+            or not isinstance(cart.get("key"), str) or not cart["key"]
+            or not isinstance(charts.get("key"), str) or not charts["key"]
+            or type(cart.get("items")) is not int or cart["items"] < 0
+            or type(charts.get("top_items")) is not int or charts["top_items"] < 0
+            or result.get("cart_items") != cart["items"]
+            or result.get("charts_top_items") != charts["top_items"]
+            or charts["top_items"] > cart["items"]
+        ):
+            raise RuntimeError("procurement cart/charts warm or verified readback incomplete")
         return result
 
     # Force the first calculation per cycle and verify every cache write by reading
