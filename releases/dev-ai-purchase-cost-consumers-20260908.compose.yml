@@ -1,0 +1,7 @@
+# Append separately to each target service's existing Compose chain.
+# Python procure299d2cb7 serves the prewarmed v11 verified-cost contract.
+services:
+  data-concord:
+    image: gba-data-concord:verified-cost-2864f040
+  gba-console:
+    image: gba-console:verified-cost-c38dbb88

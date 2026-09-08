@@ -1,0 +1,9 @@
+# Verified procurement cost consumer release
+
+The Python service, Concord proxy, and console now carry explicit current posted receipt evidence. Costs are net goods estimates excluding VAT, delivery, and customs. Unknown amounts remain null; partial and buyer-supplied values do not certify budget totals. Exact Supplier ClientAgreement identifiers are evidence, not a substituted customer quotation contract. The native draft flow continues to send product identifiers and quantities and resolve its own agreement prices.
+
+Deploy `releases/dev-ai-purchase-cost-consumers-20260908.compose.yml` separately onto each target service’s actual Compose chain, retaining every prior overlay. Python revision `299d2cb7d8041666d908230b398b2011058b6308` uses the dedicated native reader key and prewarmed `procure:v11-verified-net-cost-h20250101` namespace. Analytics remains on the independently accepted reader release. Never print the key, environment, or full Compose configuration.
+
+Before deployment, require the final candidate warm, two independently rebuilt identical plans, the unchanged schema-2 fleet gate, and built images. Preserve the strict coverage attempt: current selected rows contain no nonzero reservations or in-transit examples, so strict scenario coverage fails G001/G002. Default reconciliation reports those coverage gaps; it must still reject arithmetic, source, and contract mismatches. Existing nonzero fixtures test both inventory inputs. This does not claim live coverage of absent cases.
+
+The dedicated key is provisioned in `secrets/dev/ProcureCostInternalAuth__ApiKey` (0600) and is copied only into the three native purchase-cost settings in the Python environment. No source 1C or native business records are changed. Final live API/UI acceptance and exact deployment evidence are recorded separately in the protected evidence directory.
