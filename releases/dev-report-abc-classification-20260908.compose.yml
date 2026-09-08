@@ -1,0 +1,6 @@
+# Append to each target service's actual active Compose chain after Solvency acceptance.
+services:
+  data-analytics:
+    image: gba-data-analytics:report-abc-96acca99
+  gba-console:
+    image: gba-console:report-abc-fb786de4
