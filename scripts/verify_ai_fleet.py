@@ -10,10 +10,12 @@ produced by gba-procure's read-only ``procure_reconcile.py`` command.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import ipaddress
 import json
 import math
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -23,6 +25,7 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from fractions import Fraction
 from pathlib import Path
 from typing import Any, Callable, Mapping
 from zoneinfo import ZoneInfo
@@ -1519,6 +1522,157 @@ def validate_forecast(
     }
 
 
+def _procurement_cent_string(value: object) -> bool:
+    """Exact nonnegative decimal text; never turn an unknown total into numeric zero."""
+    return (
+        isinstance(value, str)
+        and len(value) <= 128
+        and re.fullmatch(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?", value) is not None
+        and (Fraction(Decimal(value)) * 100).denominator == 1
+    )
+
+
+def _validate_procurement_purchase_costs(
+    value: object, *, expected_as_of: str, plan_items: object
+) -> tuple[list[str], JSON_OBJECT]:
+    """Check schema-2 reconciliation identities/counts, not a second pricing engine."""
+    errors: list[str] = []
+    costs = _object(value, errors, "metrics.purchase_costs")
+    if costs is None:
+        return errors, {}
+    prefix = "metrics.purchase_costs"
+    for name, expected in (
+        ("scope", "CurrentPostedReceipts"),
+        ("resolver_version", "current-posted-receipt-cost-v1"),
+        ("basis", "net_goods_excluding_vat_delivery_customs"),
+    ):
+        if costs.get(name) != expected:
+            errors.append(f"{prefix}.{name} must equal {expected}")
+
+    counts = (
+        "observation_count", "known_count", "unknown_count", "selected_pair_count",
+        "complete_pair_count", "partial_pair_count", "unknown_pair_count",
+        "no_observations_pair_count", "budget_eligible_pair_count", "buyer_supplied_pair_count",
+        "priced_selected_pairs", "computed_unpriced_items",
+    )
+    valid_counts = all(_nonnegative_int(costs.get(name)) for name in counts)
+    for name in counts:
+        if not _nonnegative_int(costs.get(name)):
+            errors.append(f"{prefix}.{name} must be a nonnegative integer")
+    if valid_counts:
+        selected = costs["selected_pair_count"]
+        if selected != plan_items:
+            errors.append(f"{prefix}.selected_pair_count must equal metrics.plan_items")
+        if costs["known_count"] + costs["unknown_count"] != costs["observation_count"]:
+            errors.append(f"{prefix} known and unknown counts must sum to observation_count")
+        categories = ("complete", "partial", "unknown", "no_observations", "buyer_supplied")
+        if sum(costs[f"{name}_pair_count"] for name in categories) != selected:
+            errors.append(f"{prefix} five coverage categories must sum to selected_pair_count")
+        if costs["budget_eligible_pair_count"] > costs["complete_pair_count"]:
+            errors.append(f"{prefix}.budget_eligible_pair_count cannot exceed complete_pair_count")
+        if costs["priced_selected_pairs"] + costs["computed_unpriced_items"] != selected:
+            errors.append(f"{prefix} priced and unpriced counts must sum to selected_pair_count")
+        if not costs["budget_eligible_pair_count"] <= costs["priced_selected_pairs"] <= sum(
+            costs[f"{name}_pair_count"] for name in ("complete", "partial", "buyer_supplied")
+        ):
+            errors.append(f"{prefix} priced count is inconsistent with coverage and budget eligibility")
+        # Global observations cover every disjoint component, including unselected products.
+        if costs["known_count"] < costs["complete_pair_count"] + costs["partial_pair_count"]:
+            errors.append(f"{prefix} selected known coverage exceeds global known observations")
+        if costs["unknown_count"] < costs["unknown_pair_count"] + costs["partial_pair_count"]:
+            errors.append(f"{prefix} selected unknown coverage exceeds global unknown observations")
+        if costs.get("cost_totals_certified") is not (costs["budget_eligible_pair_count"] == selected):
+            errors.append(f"{prefix}.cost_totals_certified must match complete budget eligibility")
+    elif type(costs.get("cost_totals_certified")) is not bool:
+        errors.append(f"{prefix}.cost_totals_certified must be boolean")
+    amount = costs.get("computed_priced_cost_eur")
+    if not _procurement_cent_string(amount):
+        errors.append(f"{prefix}.computed_priced_cost_eur must be an exact nonnegative EUR-cent decimal string")
+
+    components = costs.get("components")
+    products: set[int] = set()
+    component_ids: set[str] = set()
+    if not isinstance(components, list) or len(components) > 100:
+        errors.append(f"{prefix}.components must contain at most 100 bounded components")
+        components = []
+    component_fields = {"component_id", "product_ids", "supplier_id", "as_of_exclusive", "history_days", "fingerprint"}
+    for index, component in enumerate(components):
+        label = f"{prefix}.components[{index}]"
+        if not isinstance(component, dict) or set(component) != component_fields:
+            errors.append(f"{label} must contain exactly the six schema-2 component fields")
+            continue
+        ids = component["product_ids"]
+        ids_valid = (
+            isinstance(ids, list) and 1 <= len(ids) <= 1000
+            and all(_positive_id(item) and item <= 2**63 - 1 for item in ids)
+        )
+        if ids_valid:
+            ids_valid = ids == sorted(set(ids))
+        if not ids_valid:
+            errors.append(f"{label}.product_ids must be 1..1000 sorted distinct positive Int64 identities")
+        else:
+            if products.intersection(ids):
+                errors.append(f"{label} overlaps another component product scope")
+            products.update(ids)
+        supplier = component["supplier_id"]
+        supplier_valid = supplier is None or _positive_id(supplier) and supplier <= 2**63 - 1
+        if not supplier_valid:
+            errors.append(f"{label}.supplier_id must be a positive Int64 identity or null")
+        history = component["history_days"]
+        history_valid = _is_strict_int(history) and 1 <= history <= 540
+        if not history_valid:
+            errors.append(f"{label}.history_days must be in 1..540")
+        as_of = component["as_of_exclusive"]
+        try:
+            day = date.fromisoformat(as_of)
+            date_valid = (as_of == day.isoformat() == expected_as_of and
+                          date(2025, 1, 1) < day and day.year <= 9998)
+        except (TypeError, ValueError):
+            date_valid = False
+        if not date_valid:
+            errors.append(f"{label}.as_of_exclusive must equal the valid artifact business date")
+        fingerprint = component["fingerprint"]
+        identity = component["component_id"]
+        sha_valid = all(isinstance(item, str) and re.fullmatch(r"[0-9a-f]{64}", item) is not None
+                        for item in (fingerprint, identity))
+        if not sha_valid:
+            errors.append(f"{label} fingerprint and component_id must be canonical SHA256 strings")
+        elif identity in component_ids:
+            errors.append(f"{label}.component_id is duplicated")
+        else:
+            component_ids.add(identity)
+        if ids_valid and supplier_valid and history_valid and date_valid and sha_valid:
+            request = {"version": 1, "product_ids": ids, "supplier_id": supplier,
+                       "as_of_exclusive": as_of, "history_days": history}
+            expected_id = hashlib.sha256(json.dumps(
+                {"request": request, "fingerprint": fingerprint}, sort_keys=True, separators=(",", ":")
+            ).encode("ascii")).hexdigest()
+            if identity != expected_id:
+                errors.append(f"{label}.component_id must bind the exact request and financial fingerprint")
+    if valid_counts and (costs["selected_pair_count"] > len(products) or
+                         costs["observation_count"] > 0 and not components):
+        errors.append(f"{prefix}.components do not cover the selected product population")
+    unpriced = costs.get("computed_unpriced_items")
+    return errors, {
+        "purchase_cost_scope": costs.get("scope"),
+        "purchase_cost_components": len(components),
+        "purchase_cost_observations": costs.get("observation_count"),
+        "purchase_cost_known_observations": costs.get("known_count"),
+        "purchase_cost_unknown_observations": costs.get("unknown_count"),
+        "priced_selected_pairs": costs.get("priced_selected_pairs"),
+        "unpriced_items": unpriced,
+        "priced_cost_eur": amount,
+        "total_cost_eur": amount if _nonnegative_int(unpriced) and unpriced == 0 else None,
+        "cost_totals_certified": costs.get("cost_totals_certified"),
+        "buyer_supplied_pairs": costs.get("buyer_supplied_pair_count"),
+        "cost_total_basis": (
+            "includes_buyer_values_with_unverified_tax_basis"
+            if _positive_id(costs.get("buyer_supplied_pair_count"))
+            else "net_goods_excluding_vat_delivery_customs"
+        ),
+    }
+
+
 def validate_procurement_artifact(
     payload: object,
     *,
@@ -1530,11 +1684,11 @@ def validate_procurement_artifact(
     obj = _object(payload, errors, "procurement reconciliation artifact")
     if obj is None:
         return errors, {}
-    if obj.get("schema_version") != 1:
-        errors.append("schema_version must equal 1")
+    if type(obj.get("schema_version")) is not int or obj.get("schema_version") != 2:
+        errors.append("schema_version must equal 2 for verified purchase-cost reconciliation")
     if (
         obj.get("ok") is not True
-        or obj.get("exit_code") != 0
+        or type(obj.get("exit_code")) is not int or obj.get("exit_code") != 0
         or obj.get("exit_name") != "exact"
     ):
         errors.append("artifact result must be ok=true, exit_code=0, exit_name='exact'")
@@ -1562,7 +1716,6 @@ def validate_procurement_artifact(
         "unique_plan_products",
         "products_checked",
         "producer_product_pairs_checked",
-        "priced_selected_pairs",
     )
     for name in required_positive:
         if not _positive_id(metrics.get(name)):
@@ -1572,18 +1725,26 @@ def validate_procurement_artifact(
         "unique_plan_products",
         "products_checked",
         "producer_product_pairs_checked",
-        "priced_selected_pairs",
     ):
         if metrics.get(name) != plan_items:
             errors.append(f"metrics.{name} must equal metrics.plan_items")
-    if metrics.get("computed_unpriced_items") != 0:
-        errors.append("metrics.computed_unpriced_items must equal zero")
-    if metrics.get("consignment_drift_keys") != 0:
+    purchase_errors, purchase_details = _validate_procurement_purchase_costs(
+        metrics.get("purchase_costs"), expected_as_of=expected_as_of, plan_items=plan_items
+    )
+    errors.extend(purchase_errors)
+    if not _nonnegative_int(metrics.get("computed_unpriced_items")):
+        errors.append("metrics.computed_unpriced_items must be a nonnegative integer")
+    if type(metrics.get("consignment_drift_keys")) is not int or metrics.get("consignment_drift_keys") != 0:
         errors.append("metrics.consignment_drift_keys must equal zero")
     if metrics.get("deterministic_builds") is not True:
         errors.append("metrics.deterministic_builds must be true")
-    if not _cents(metrics.get("computed_priced_cost_eur")):
-        errors.append("metrics.computed_priced_cost_eur must be exact EUR cents")
+    if not _procurement_cent_string(metrics.get("computed_priced_cost_eur")):
+        errors.append("metrics.computed_priced_cost_eur must be an exact EUR-cent decimal string")
+    purchase_costs = metrics.get("purchase_costs")
+    if isinstance(purchase_costs, dict):
+        for name in ("computed_unpriced_items", "computed_priced_cost_eur"):
+            if metrics.get(name) != purchase_costs.get(name):
+                errors.append(f"metrics.{name} must equal metrics.purchase_costs.{name}")
     qty = _decimal(metrics.get("computed_total_suggested_qty"))
     if qty is None or qty <= 0:
         errors.append(
@@ -1629,7 +1790,7 @@ def validate_procurement_artifact(
         "as_of": obj.get("as_of"),
         "plan_items": plan_items,
         "total_suggested_qty": metrics.get("computed_total_suggested_qty"),
-        "total_cost_eur": metrics.get("computed_priced_cost_eur"),
+        **purchase_details,
         "warning_count": len(issues) if isinstance(issues, list) else None,
     }
 

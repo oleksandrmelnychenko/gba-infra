@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import sys
 import tempfile
 import unittest
@@ -1032,7 +1033,7 @@ class SemanticContractTests(unittest.TestCase):
 
 def exact_procurement_artifact() -> dict:
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "ok": True,
         "exit_code": 0,
         "exit_name": "exact",
@@ -1051,6 +1052,7 @@ def exact_procurement_artifact() -> dict:
             "deterministic_builds": True,
             "computed_priced_cost_eur": "15.20",
             "computed_total_suggested_qty": "7.50",
+            "purchase_costs": exact_purchase_cost_metrics(),
         },
         "source_readiness": {
             "ready": True,
@@ -1061,6 +1063,28 @@ def exact_procurement_artifact() -> dict:
             "source_fingerprint": "fingerprint",
         },
         "issues": [{"severity": "warning", "code": "G001"}],
+    }
+
+
+def purchase_cost_component(products: list[int], *, supplier: int | None = None) -> dict:
+    request = {"version": 1, "product_ids": products, "supplier_id": supplier,
+               "as_of_exclusive": "2026-07-25", "history_days": 540}
+    fingerprint = "a" * 64
+    identity = hashlib.sha256(json.dumps({"request": request, "fingerprint": fingerprint},
+                                        sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return {"component_id": identity, "product_ids": products, "supplier_id": supplier,
+            "as_of_exclusive": "2026-07-25", "history_days": 540, "fingerprint": fingerprint}
+
+
+def exact_purchase_cost_metrics() -> dict:
+    return {
+        "scope": "CurrentPostedReceipts", "resolver_version": "current-posted-receipt-cost-v1",
+        "basis": "net_goods_excluding_vat_delivery_customs", "components": [purchase_cost_component([1, 2, 3])],
+        "observation_count": 5, "known_count": 5, "unknown_count": 0,
+        "selected_pair_count": 3, "complete_pair_count": 3, "partial_pair_count": 0,
+        "unknown_pair_count": 0, "no_observations_pair_count": 0, "buyer_supplied_pair_count": 0,
+        "budget_eligible_pair_count": 3, "priced_selected_pairs": 3, "computed_unpriced_items": 0,
+        "computed_priced_cost_eur": "15.20", "cost_totals_certified": True,
     }
 
 
@@ -1075,6 +1099,150 @@ class ProcurementArtifactTests(unittest.TestCase):
 
         self.assertEqual([], errors)
         self.assertEqual("15.20", details["total_cost_eur"])
+        self.assertEqual("15.20", details["priced_cost_eur"])
+        self.assertTrue(details["cost_totals_certified"])
+
+    def validate(self, payload: dict) -> tuple[list[str], dict]:
+        return gate.validate_procurement_artifact(payload, expected_as_of="2026-07-25",
+            canonical_cart_items=3, expected_source_fingerprint="fingerprint")
+
+    def test_partial_unknown_and_true_zero_priced_subtotal_are_honest_success(self) -> None:
+        payload = exact_procurement_artifact()
+        costs = payload["metrics"]["purchase_costs"]
+        costs.update(known_count=2, unknown_count=3, complete_pair_count=1, partial_pair_count=1,
+                     unknown_pair_count=1, budget_eligible_pair_count=1, priced_selected_pairs=2,
+                     computed_unpriced_items=1, computed_priced_cost_eur="0.00", cost_totals_certified=False)
+        payload["metrics"].update(computed_unpriced_items=1, computed_priced_cost_eur="0.00")
+        # Legacy metric counts raw known source pairs; it is intentionally not a line price count.
+        payload["metrics"]["priced_selected_pairs"] = 1
+        errors, details = self.validate(payload)
+        self.assertEqual([], errors)
+        self.assertEqual("0.00", details["priced_cost_eur"])
+        self.assertIsNone(details["total_cost_eur"])
+        self.assertFalse(details["cost_totals_certified"])
+
+    def test_all_unpriced_is_not_a_false_failure_or_zero_total(self) -> None:
+        payload = exact_procurement_artifact(); costs = payload["metrics"]["purchase_costs"]
+        costs.update(observation_count=0, known_count=0, complete_pair_count=0, no_observations_pair_count=3,
+                     budget_eligible_pair_count=0, priced_selected_pairs=0, computed_unpriced_items=3,
+                     computed_priced_cost_eur="0.00", cost_totals_certified=False)
+        payload["metrics"].update(computed_unpriced_items=3, computed_priced_cost_eur="0.00", priced_selected_pairs=0)
+        errors, details = self.validate(payload)
+        self.assertEqual([], errors)
+        self.assertEqual("0.00", details["priced_cost_eur"])
+        self.assertIsNone(details["total_cost_eur"])
+
+    def test_complete_true_zero_is_a_known_total(self) -> None:
+        payload = exact_procurement_artifact()
+        payload["metrics"]["computed_priced_cost_eur"] = "0.00"
+        payload["metrics"]["purchase_costs"]["computed_priced_cost_eur"] = "0.00"
+        errors, details = self.validate(payload)
+        self.assertEqual([], errors)
+        self.assertEqual("0.00", details["total_cost_eur"])
+        self.assertTrue(details["cost_totals_certified"])
+
+    def test_buyer_amounts_are_visible_without_receipt_certification(self) -> None:
+        payload = exact_procurement_artifact(); costs = payload["metrics"]["purchase_costs"]
+        costs.update(complete_pair_count=2, buyer_supplied_pair_count=1, budget_eligible_pair_count=2,
+                     cost_totals_certified=False)
+        errors, details = self.validate(payload)
+        self.assertEqual([], errors)
+        self.assertEqual("15.20", details["total_cost_eur"])
+        self.assertEqual("includes_buyer_values_with_unverified_tax_basis", details["cost_total_basis"])
+
+    def test_global_observations_need_not_equal_selected_pairs(self) -> None:
+        payload = exact_procurement_artifact(); costs = payload["metrics"]["purchase_costs"]
+        costs["components"].append(purchase_cost_component([4, 5, 6]))
+        costs.update(observation_count=100, known_count=90, unknown_count=10)
+        self.assertEqual([], self.validate(payload)[0])
+
+    def test_schema_one_and_missing_current_cost_proof_are_rejected(self) -> None:
+        for change in (lambda p: p.update(schema_version=1), lambda p: p["metrics"].pop("purchase_costs")):
+            with self.subTest(change=change):
+                payload = exact_procurement_artifact(); change(payload)
+                self.assertTrue(self.validate(payload)[0])
+
+    def test_every_count_and_certification_invariant_rejects_corruption(self) -> None:
+        mutations = {
+            "known_count": 4, "unknown_count": -1, "observation_count": True,
+            "selected_pair_count": 4, "complete_pair_count": 2, "partial_pair_count": 1,
+            "unknown_pair_count": 1, "no_observations_pair_count": 1,
+            "buyer_supplied_pair_count": 1, "budget_eligible_pair_count": 4,
+            "priced_selected_pairs": 2, "computed_unpriced_items": 1,
+            "cost_totals_certified": 1,
+        }
+        for name, bad in mutations.items():
+            with self.subTest(field=name):
+                payload = exact_procurement_artifact(); payload["metrics"]["purchase_costs"][name] = bad
+                self.assertTrue(self.validate(payload)[0])
+
+    def test_missing_each_frozen_field_is_rejected(self) -> None:
+        for name in exact_purchase_cost_metrics():
+            with self.subTest(field=name):
+                payload = exact_procurement_artifact(); del payload["metrics"]["purchase_costs"][name]
+                self.assertTrue(self.validate(payload)[0])
+
+    def test_wrong_scope_formula_or_decimal_representation_is_rejected(self) -> None:
+        mutations = [("scope", "HistoricalSnapshot"), ("resolver_version", "legacy"), ("basis", "gross_goods"),
+                     ("computed_priced_cost_eur", 15.2), ("computed_priced_cost_eur", "15.201"),
+                     ("computed_priced_cost_eur", "NaN"), ("computed_priced_cost_eur", "1.52e1"),
+                     ("computed_priced_cost_eur", "-15.20"), ("computed_priced_cost_eur", "015.20")]
+        for name, bad in mutations:
+            with self.subTest(name=name, bad=bad):
+                payload = exact_procurement_artifact(); payload["metrics"]["purchase_costs"][name] = bad
+                self.assertTrue(self.validate(payload)[0])
+
+    def test_request_component_identity_and_cardinality_are_proved(self) -> None:
+        mutations = [
+            ("component_id", "b" * 64), ("fingerprint", "c" * 64), ("fingerprint", "not-sha"),
+            ("supplier_id", 2), ("supplier_id", 0), ("supplier_id", True), ("supplier_id", 2**63),
+            ("as_of_exclusive", "2026-07-24"), ("as_of_exclusive", "20260725"),
+            ("history_days", 541), ("history_days", 0), ("history_days", True),
+            ("product_ids", []), ("product_ids", [1, 1, 3]), ("product_ids", [3, 2, 1]),
+            ("product_ids", [False, 2, 3]), ("product_ids", [0, 2, 3]),
+            ("product_ids", [1, 2, 2**63]), ("product_ids", list(range(1, 1002))),
+        ]
+        for name, bad in mutations:
+            with self.subTest(name=name, bad=bad):
+                payload = exact_procurement_artifact(); payload["metrics"]["purchase_costs"]["components"][0][name] = bad
+                self.assertTrue(self.validate(payload)[0])
+
+    def test_components_cannot_duplicate_overlap_or_exceed_request_bound(self) -> None:
+        for components in (
+            [], [purchase_cost_component([1, 2, 3])] * 2,
+            [purchase_cost_component([1, 2]), purchase_cost_component([2, 3])],
+            [purchase_cost_component([i]) for i in range(1, 102)],
+        ):
+            with self.subTest(count=len(components)):
+                payload = exact_procurement_artifact(); payload["metrics"]["purchase_costs"]["components"] = components
+                self.assertTrue(self.validate(payload)[0])
+
+    def test_component_fields_are_required_and_no_extra_expression_is_accepted(self) -> None:
+        for field in purchase_cost_component([1, 2, 3]):
+            with self.subTest(field=field):
+                payload = exact_procurement_artifact()
+                del payload["metrics"]["purchase_costs"]["components"][0][field]
+                self.assertTrue(self.validate(payload)[0])
+        payload = exact_procurement_artifact()
+        payload["metrics"]["purchase_costs"]["components"][0]["formula"] = "gross-minus-current-vat"
+        self.assertTrue(self.validate(payload)[0])
+
+    def test_money_total_duplicates_cannot_disagree(self) -> None:
+        for name, value in (("computed_priced_cost_eur", "15.21"), ("computed_unpriced_items", 2)):
+            payload = exact_procurement_artifact(); payload["metrics"][name] = value
+            self.assertTrue(self.validate(payload)[0])
+
+    def test_error_source_change_inventory_drift_and_nondeterminism_still_fail(self) -> None:
+        changes = [lambda p: p.update(exit_code=5, exit_name="source_changed", ok=False),
+                   lambda p: p.update(plan_digests=["a", "b"]),
+                   lambda p: p["metrics"].update(consignment_drift_keys=1),
+                   lambda p: p["metrics"].update(deterministic_builds=False),
+                   lambda p: p["source_readiness"].update(ready=False),
+                   lambda p: p["metrics"].update(computed_total_suggested_qty="0")]
+        for change in changes:
+            with self.subTest(change=change):
+                payload = exact_procurement_artifact(); change(payload)
+                self.assertTrue(self.validate(payload)[0])
 
     def test_epoch_or_item_drift_fails_closed(self) -> None:
         payload = exact_procurement_artifact()
