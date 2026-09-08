@@ -1,0 +1,6 @@
+# Append to each target's actual active Compose chain during the coordinated Solvency rollout.
+services:
+  data-concord:
+    image: gba-data-concord:solvency-current-f0bb2e65
+  gba-console:
+    image: gba-console:solvency-current-9b6f7f31
