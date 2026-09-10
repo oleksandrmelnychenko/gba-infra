@@ -1,0 +1,3 @@
+services:
+  gba-console:
+    image: gba-console:bug1248-5c4062ea-20260910

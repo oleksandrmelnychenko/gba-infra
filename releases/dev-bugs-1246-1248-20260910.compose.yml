@@ -1,0 +1,6 @@
+# Only the DEV API and console. Existing analytics, data and runtime settings stay unchanged.
+services:
+  data-concord:
+    image: gba-data-concord:bug1246-2996075d3-20260910
+  gba-console:
+    image: gba-console:bug1248-6a8b567b-20260910
