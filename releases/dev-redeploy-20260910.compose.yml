@@ -1,0 +1,11 @@
+# DEV main refresh, 2026-09-10. Append to each running target's Compose chain.
+# Use an explicit service with up -d --no-deps --no-build; do not recreate databases.
+# Server main e4c664000 plus preserved agreement-balance optimization: 1a2e5387e.
+# Console main merged with origin/main 1013ae78: 4b23e03f2.
+services:
+  data-concord:
+    image: gba-data-concord:redeploy-1a2e5387e-20260910
+  data-analytics:
+    image: gba-data-analytics:redeploy-1a2e5387e-20260910
+  gba-console:
+    image: gba-console:redeploy-4b23e03f2-20260910

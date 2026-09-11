@@ -1,0 +1,6 @@
+# DEV API only. Append to the running data-concord Compose chain.
+# Preserve the separately deployed console; use up --no-deps --no-build data-concord.
+# Release source 4116d4b77; base API 2864f040; only persistence DLL/PDB replaced.
+services:
+  data-concord:
+    image: gba-data-concord:agreement-balances-4116d4b77

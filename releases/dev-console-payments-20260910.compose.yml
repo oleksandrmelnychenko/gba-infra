@@ -1,0 +1,5 @@
+# DEV console only; preserve API, analytics, databases and all other services.
+# Merged origin/main 24a94e93 into local main: 1928dcdb8.
+services:
+  gba-console:
+    image: gba-console:payments-1928dcdb8-20260910-r2
