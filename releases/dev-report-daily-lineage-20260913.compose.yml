@@ -3,8 +3,8 @@
 # `up -d --no-deps --no-build`; database migrations are a separate one-shot step.
 services:
   data-concord:
-    image: gba-data-concord:main-fec24bcff-report-daily-lineage
+    image: gba-data-concord:main-807744289-report-daily-lineage
   data-analytics:
-    image: gba-data-analytics:main-fec24bcff-report-daily-lineage
+    image: gba-data-analytics:main-807744289-report-daily-lineage
   gba-console:
     image: gba-console:main-d78cc960-report-daily-lineage
