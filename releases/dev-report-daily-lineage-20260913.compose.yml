@@ -1,0 +1,10 @@
+# DEV BUG-1245 exact report-lineage release, 2026-09-13.
+# Append to the current DEV Compose chain and target services explicitly with
+# `up -d --no-deps --no-build`; database migrations are a separate one-shot step.
+services:
+  data-concord:
+    image: gba-data-concord:main-fec24bcff-report-daily-lineage
+  data-analytics:
+    image: gba-data-analytics:main-fec24bcff-report-daily-lineage
+  gba-console:
+    image: gba-console:main-d78cc960-report-daily-lineage
