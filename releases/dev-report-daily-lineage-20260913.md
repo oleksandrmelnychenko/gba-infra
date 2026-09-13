@@ -7,7 +7,10 @@ requires a genuinely read-only source principal.
 
 ## Immutable inputs
 
-- Server source: `63da3c2eac5293995d53d43bbd4d2f1dc75bd869`
+- Server runtime source: `63da3c2eac5293995d53d43bbd4d2f1dc75bd869`
+- Server validation head: `33eafd3fbdb8d676654e3ba5b0235bfae0a92755`. The two commits after
+  the runtime source modify only `OneCTurnoverSourceOneCIntegrationTests.cs`; `src/` and the
+  Dockerfile are unchanged.
 - Console source: `093e644df2c6d51a1a2e3e54abfc206051c400e9`
 - API image: `gba-data-concord:main-63da3c2ea-report-daily-candidate`
   (`sha256:dd0f14c8cc627ae7c952f7a206e5318c2159e7286d3e6ed013b0db61966f4365`)
@@ -18,7 +21,8 @@ requires a genuinely read-only source principal.
 - Console image: `gba-console:main-093e644d-report-daily-candidate`
   (`sha256:9ce3d0d4a31a7ca23ebdab62043e6944163743a4e8478a36c70385588c1e0555`)
 
-Every image has an exact `gba.git.sha` label matching its source commit.
+Every runtime image has an exact `gba.git.sha` label matching the source commit from which its
+runtime files were built.
 
 ## Verification before rollout
 
@@ -48,6 +52,12 @@ Every image has an exact `gba.git.sha` label matching its source commit.
 - The current sales-and-cost ledger migration and atomic publication path passed its real
   disposable SQL Server test (1/1); the test database was removed and a postflight query
   found zero `GbaTurnoverTest_*` databases.
+- The exact Daily 1C reference matrix is now regression-bound offline: all 21 rows and 10
+  measures (210/210 cells, including blanks) produce canonical SHA-256
+  `aee869048b1d74b471223d5341471cae0198afa39d02410708ef6cf82f632064` in a passing test.
+  Its immutable inputs were re-hashed from disk: `expected-21x10.json`
+  `6eb0c5db6991fa33906007d4282ceaf4d675f58dc4659eee5ec152b9f542e0c6` and original 1C XLS
+  `377546f1cf6f96561f8afbf793dca76f4bc462dbef19a622aeb02438c8a5cabb`.
 
 ## Safety and remaining proof boundary
 
@@ -63,7 +73,10 @@ Every image has an exact `gba.git.sha` label matching its source commit.
   `1 1 1 1 1` for CONNECT, SELECT, unexpected database permission, unexpected server permission,
   and object mutation permission respectively, so the new fail-closed gate rejects it.
 - Customer `InGroup` remains fail-closed. No immutable Fenix-to-AMG operation bridge exists for the Fenix-side AMG facts, so approximate matching by date, captions, products, quantities, or amounts is prohibited.
-- The last sealed native Daily matrix remains 45/210 matching numeric cells. This release is infrastructure toward parity, not a 100% parity declaration.
+- The old non-equivalent native capture remains 45/210 matching cells because its settings and
+  source observation were not the same as the 1C workbook. The exact 1C matrix is now pinned
+  210/210 offline, but the live source-to-generated-report test remains environment-gated until
+  the genuinely read-only Fenix credential exists. This is not yet a live 100% parity declaration.
 - No business synchronization is part of this release.
 - A fresh read-only DEV schema check on 2026-09-13 found the cost table absent and no
   migration at or after `20260912000000` applied. Exactly four Concord migrations from
