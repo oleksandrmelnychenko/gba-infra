@@ -58,8 +58,9 @@ runtime files were built.
 - The sync catalogue now publishes the exact retained Daily preset only when all five source
   organizations, product kind `Товар`, and buyer root `Покупці` are present in the permission-gated
   Fenix catalogue. The console pre-fills that preset but still requires explicit confirmation and
-  fails closed for a choice absent from the catalogue. Server OneCTurnover tests pass 39/39;
-  console report/sync tests pass 67/67, production build and changed-file lint pass, and React
+  fails closed for a choice absent from the catalogue. Server OneCTurnover tests have 39 passed
+  and six explicitly environment-gated skipped; console report/sync tests pass 67/67,
+  production build and changed-file lint pass, and React
   Doctor reports 100/100.
 
 ## Safety and remaining proof boundary
