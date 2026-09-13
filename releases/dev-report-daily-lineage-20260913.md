@@ -45,6 +45,9 @@ Every image has an exact `gba.git.sha` label matching its source commit.
 - Current server Release build completes with zero errors and nine reviewed pre-existing
   warnings. Current console report tests are 42/42, changed-file lint is clean, and its
   production build succeeds; the existing large-chunk advisory remains.
+- The current sales-and-cost ledger migration and atomic publication path passed its real
+  disposable SQL Server test (1/1); the test database was removed and a postflight query
+  found zero `GbaTurnoverTest_*` databases.
 
 ## Safety and remaining proof boundary
 
