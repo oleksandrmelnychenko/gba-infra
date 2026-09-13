@@ -3,14 +3,14 @@
 # `up -d --no-deps --no-build`; database migrations are a separate one-shot step.
 services:
   data-concord:
-    image: gba-data-concord:main-63da3c2ea-report-daily-candidate
+    image: gba-data-concord:main-c581c77b9-report-daily-candidate
     secrets:
       - source: ConnectionStrings__FenixOneCReadOnlyConnectionString
         target: ConnectionStrings:FenixOneCReadOnlyConnectionString
   data-analytics:
-    image: gba-data-analytics:main-63da3c2ea-report-daily-candidate
+    image: gba-data-analytics:main-c581c77b9-report-daily-candidate
   gba-console:
-    image: gba-console:main-093e644d-report-daily-candidate
+    image: gba-console:main-67f59eea-report-daily-candidate
 
 secrets:
   ConnectionStrings__FenixOneCReadOnlyConnectionString:

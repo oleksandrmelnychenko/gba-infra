@@ -7,19 +7,16 @@ requires a genuinely read-only source principal.
 
 ## Immutable inputs
 
-- Server runtime source: `63da3c2eac5293995d53d43bbd4d2f1dc75bd869`
-- Server validation head: `33eafd3fbdb8d676654e3ba5b0235bfae0a92755`. The two commits after
-  the runtime source modify only `OneCTurnoverSourceOneCIntegrationTests.cs`; `src/` and the
-  Dockerfile are unchanged.
-- Console source: `093e644df2c6d51a1a2e3e54abfc206051c400e9`
-- API image: `gba-data-concord:main-63da3c2ea-report-daily-candidate`
-  (`sha256:dd0f14c8cc627ae7c952f7a206e5318c2159e7286d3e6ed013b0db61966f4365`)
-- Analytics image: `gba-data-analytics:main-63da3c2ea-report-daily-candidate`
-  (`sha256:815f22c55c55467d33a7b7cc52119075c7df81bb02b85d0f4bda368148c6a4ed`)
-- Migrator image: `gba-db-migrator:main-63da3c2ea-report-daily-candidate`
-  (`sha256:73eba031decdf02b3939ef85caacaf7b6b47517f8338557b4890fed26d1f1caa`)
-- Console image: `gba-console:main-093e644d-report-daily-candidate`
-  (`sha256:9ce3d0d4a31a7ca23ebdab62043e6944163743a4e8478a36c70385588c1e0555`)
+- Server runtime source: `c581c77b9a2c15be6c65c24df4072a0ddb69420e`
+- Console source: `67f59eeae920bcfd87aa28c43d32d66934be6bdc`
+- API image: `gba-data-concord:main-c581c77b9-report-daily-candidate`
+  (`sha256:d637761333101633f6aa1221f8159ff70abc36f8111d33045e49ee8339c33d5e`)
+- Analytics image: `gba-data-analytics:main-c581c77b9-report-daily-candidate`
+  (`sha256:483ad9bf96d8616f4de4273685d57c410cbfe37dcc76e8cea4224c56461c50f1`)
+- Migrator image: `gba-db-migrator:main-c581c77b9-report-daily-candidate`
+  (`sha256:3bbaa248f5fec9445ea0d25c115134db59b7130c6fb3c48692c7d97e51467383`)
+- Console image: `gba-console:main-67f59eea-report-daily-candidate`
+  (`sha256:0af44be91c2ec89ee5a1d044b5afa0b7ee1b413249fe3ea0cdfa5deedf8458de`)
 
 Every runtime image has an exact `gba.git.sha` label matching the source commit from which its
 runtime files were built.
@@ -58,6 +55,12 @@ runtime files were built.
   Its immutable inputs were re-hashed from disk: `expected-21x10.json`
   `6eb0c5db6991fa33906007d4282ceaf4d675f58dc4659eee5ec152b9f542e0c6` and original 1C XLS
   `377546f1cf6f96561f8afbf793dca76f4bc462dbef19a622aeb02438c8a5cabb`.
+- The sync catalogue now publishes the exact retained Daily preset only when all five source
+  organizations, product kind `Товар`, and buyer root `Покупці` are present in the permission-gated
+  Fenix catalogue. The console pre-fills that preset but still requires explicit confirmation and
+  fails closed for a choice absent from the catalogue. Server OneCTurnover tests pass 39/39;
+  console report/sync tests pass 67/67, production build and changed-file lint pass, and React
+  Doctor reports 100/100.
 
 ## Safety and remaining proof boundary
 
@@ -106,7 +109,7 @@ runtime files were built.
   `3fd307159423accd7be71c8994d13a32bdde0404965bdc71b22a02adca7443cd`, verification
   `74566e9f3d8e54c1b4bd926d69801b097177a159f9f5d7c909e43353cc1d2fc6`.
 - This plan is intentionally non-executable against the current candidate until it is
-  regenerated and revalidated on `63da3c2eac5293995d53d43bbd4d2f1dc75bd869`, and until
+  regenerated and revalidated on `c581c77b9a2c15be6c65c24df4072a0ddb69420e`, and until
   deployment, ACL, authentication, idempotency-ledger, and rollback/verification gates pass.
 
 ## Current rollback pins
