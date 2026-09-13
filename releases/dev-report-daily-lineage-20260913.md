@@ -1,4 +1,4 @@
-# DEV BUG-1245 exact report-lineage and direct-repair release — 2026-09-13
+# DEV BUG-1245 exact report-lineage and direct-repair candidate — 2026-09-13
 
 Status: images built and verified; no deployment or business sync performed. Per the operator's
 instruction, no database backup was created. Consequently the required migration backup gate is
@@ -7,16 +7,16 @@ requires a genuinely read-only source principal.
 
 ## Immutable inputs
 
-- Server source: `29cd3758a8c0c127bbc4bb0221a723a110429902`
-- Console source: `d78cc9608dafefa17e6e9a7773957cc4727209cc`
-- API image: `gba-data-concord:main-29cd3758-report-daily-exact-repair`
-  (`sha256:e3754d48ae59ac929de597a9a8327340518c9ca1de9ce4d11c3a8f6656b120e2`)
-- Analytics image: `gba-data-analytics:main-29cd3758-report-daily-exact-repair`
-  (`sha256:ff2252d9e0c1d9c1d9f1edc675fa3f1abc366708650835a670e0b58ddafeeae1`)
-- Migrator image: `gba-db-migrator:main-29cd3758-report-daily-exact-repair`
-  (`sha256:651a8e85ce1db097e763d3ad5ab4801db366f39b70b9ecd2839e0753fd6262c1`)
-- Console image: `gba-console:main-d78cc960-report-daily-lineage`
-  (`sha256:e2feb24a9fb9a8463f05a70cc57aabe5d138ebc1f65009f1b81e3f27a126ab80`)
+- Server source: `63da3c2eac5293995d53d43bbd4d2f1dc75bd869`
+- Console source: `093e644df2c6d51a1a2e3e54abfc206051c400e9`
+- API image: `gba-data-concord:main-63da3c2ea-report-daily-candidate`
+  (`sha256:dd0f14c8cc627ae7c952f7a206e5318c2159e7286d3e6ed013b0db61966f4365`)
+- Analytics image: `gba-data-analytics:main-63da3c2ea-report-daily-candidate`
+  (`sha256:815f22c55c55467d33a7b7cc52119075c7df81bb02b85d0f4bda368148c6a4ed`)
+- Migrator image: `gba-db-migrator:main-63da3c2ea-report-daily-candidate`
+  (`sha256:73eba031decdf02b3939ef85caacaf7b6b47517f8338557b4890fed26d1f1caa`)
+- Console image: `gba-console:main-093e644d-report-daily-candidate`
+  (`sha256:9ce3d0d4a31a7ca23ebdab62043e6944163743a4e8478a36c70385588c1e0555`)
 
 Every image has an exact `gba.git.sha` label matching its source commit.
 
@@ -40,6 +40,11 @@ Every image has an exact `gba.git.sha` label matching its source commit.
   The failures are unrelated Akka timing/time-out tests outside the changed data-sync/migration
   files; therefore the full suite is recorded as not green even though every affected test passed.
 - Server and console `main` and `development` remote refs are each aligned.
+- Current exact-turnover focused tests: 37 passed, 6 environment-gated skipped;
+  API report contracts: 57/57; agreement-discount regression contracts: 10/10.
+- Current server Release build completes with zero errors and nine reviewed pre-existing
+  warnings. Current console report tests are 42/42, changed-file lint is clean, and its
+  production build succeeds; the existing large-chunk advisory remains.
 
 ## Safety and remaining proof boundary
 
@@ -57,10 +62,13 @@ Every image has an exact `gba.git.sha` label matching its source commit.
 - Customer `InGroup` remains fail-closed. No immutable Fenix-to-AMG operation bridge exists for the Fenix-side AMG facts, so approximate matching by date, captions, products, quantities, or amounts is prohibited.
 - The last sealed native Daily matrix remains 45/210 matching numeric cells. This release is infrastructure toward parity, not a 100% parity declaration.
 - No business synchronization is part of this release.
-- Exactly three Concord migrations remain pending:
+- A fresh read-only DEV schema check on 2026-09-13 found the cost table absent and no
+  migration at or after `20260912000000` applied. Exactly four Concord migrations from
+  the candidate remain pending:
   `20260912220000_AddNativeProductSourceClassification`,
   `20260912230000_AddNativeOrganizationSourceLineage`, and
-  `20260913090000_AddFenixCustomerLineageCaptures`.
+  `20260913090000_AddFenixCustomerLineageCaptures`, and
+  `20260913120000_AddOneCTurnoverCostLedger`.
 - The migration must run only through the approved one-shot migrator after the required
   affected-database backup. The operator declined that backup for this run, so do not run the
   migrator, deploy these dependent images, enable startup migrations, or recreate database
@@ -73,15 +81,17 @@ Every image has an exact `gba.git.sha` label matching its source commit.
 - Verification: `/root/evidence/bug-1245-direct-sync-repair-plan-20260913/verification.json`
 - Exact scope: 41 documents / 43 product keys: three missing sales, 37 missing returns,
   and one stale existing return revision.
-- The wire contract is bound to server source `29cd3758a8c0c127bbc4bb0221a723a110429902`:
+- The retained wire contract is bound to the older server source
+  `29cd3758a8c0c127bbc4bb0221a723a110429902`:
   one POST per source document, one Kyiv day, one exact type, `forAmg=false`,
   `stockMode=DocumentsOnly`, and a unique canonical `X-GBA-Sync-Operation-Id`.
 - Current plan hashes: README
   `c833edb703ad491308f4fdee0240261fd27d37dac8343093edd05766251f5ea6`, requests
   `3fd307159423accd7be71c8994d13a32bdde0404965bdc71b22a02adca7443cd`, verification
   `74566e9f3d8e54c1b4bd926d69801b097177a159f9f5d7c909e43353cc1d2fc6`.
-- This plan is intentionally non-executable until deployment, ACL, authentication,
-  idempotency-ledger, live revalidation, and rollback/verification gates pass.
+- This plan is intentionally non-executable against the current candidate until it is
+  regenerated and revalidated on `63da3c2eac5293995d53d43bbd4d2f1dc75bd869`, and until
+  deployment, ACL, authentication, idempotency-ledger, and rollback/verification gates pass.
 
 ## Current rollback pins
 
