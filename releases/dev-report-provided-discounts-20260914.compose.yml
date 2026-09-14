@@ -1,0 +1,8 @@
+# DEV native 1C provided-discounts report, 2026-09-14.
+# Append after the currently active DEV overlays. Recreate only the two server
+# services after the database migration and immutable capture publication gates.
+services:
+  data-concord:
+    image: gba-data-concord:main-e32d5f833-report-provided-discounts
+  data-analytics:
+    image: gba-data-analytics:main-e32d5f833-report-provided-discounts
