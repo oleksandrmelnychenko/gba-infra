@@ -1,0 +1,16 @@
+# DEV native 1C price-type sales comparison report, 2026-09-15.
+# Append after the currently active DEV overlays. Recreate only these services
+# after the database migration and immutable Fenix price snapshot publication.
+services:
+  data-concord:
+    image: gba-data-concord:reports-price-type-60f3484fc
+    labels:
+      gba.release: report-price-type-sales-20260915
+  data-analytics:
+    image: gba-data-analytics:reports-price-type-60f3484fc
+    labels:
+      gba.release: report-price-type-sales-20260915
+  gba-console:
+    image: gba-console:reports-price-type-03035c7b
+    labels:
+      gba.release: report-price-type-sales-20260915
