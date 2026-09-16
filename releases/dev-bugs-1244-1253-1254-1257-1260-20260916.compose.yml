@@ -1,0 +1,11 @@
+# DEV verification release for BUG-1244, BUG-1253, BUG-1254, BUG-1257 and BUG-1260.
+# Append after the active DEV overlays and recreate only data-concord and gba-console.
+services:
+  data-concord:
+    image: gba-data-concord:bugs-1244-1253-1254-1257-1260-77cb104
+    labels:
+      gba.release: bugs-1244-1253-1254-1257-1260-20260916
+  gba-console:
+    image: gba-console:bugs-1244-1253-1254-1257-1260-f29a3f6
+    labels:
+      gba.release: bugs-1244-1253-1254-1257-1260-20260916
