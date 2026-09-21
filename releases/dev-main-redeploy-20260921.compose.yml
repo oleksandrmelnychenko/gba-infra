@@ -1,5 +1,11 @@
 # DEV redeploy from the latest fetched integration branches on 2026-09-21.
 services:
+  data-analytics:
+    labels:
+      gba.release: dev-main-redeploy-20260921
+    secrets:
+      - source: ProcureCostInternalAuth__ApiKey
+        target: ProcureCostInternalAuth:ApiKey
   data-concord:
     image: gba-data-concord:main-c0846109-20260921
     labels:
@@ -16,3 +22,7 @@ services:
     image: gba-ecommerce:development-58745b21-20260921
     labels:
       gba.release: dev-main-redeploy-20260921
+
+secrets:
+  ProcureCostInternalAuth__ApiKey:
+    file: /root/projects/gba-infra/secrets/dev/ProcureCostInternalAuth__ApiKey

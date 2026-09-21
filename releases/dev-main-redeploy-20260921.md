@@ -36,6 +36,15 @@ All released containers were running with `RestartCount=0`, health status `healt
 
 Local checks on ports `35981`, `8083`, `62506`, and `8081` returned the same successful results. The Desk web, worker, and sentinel containers were also restarted and verified running. Superseded and temporary verification containers have restart policy `no`; all four live application containers have Compose `oneoff=False`.
 
+## Restored supporting DEV services
+
+- `gba-reco-redis` was restored with its existing volume, returned `PONG`, and now uses restart policy `unless-stopped`.
+- `gba-nba-mongo` was restored with its existing volume, returned an authenticated admin ping, and now uses restart policy `unless-stopped`.
+- `reports-v9-analytics` was restored on `127.0.0.1:35992`, returned `Healthy`, and now uses restart policy `unless-stopped`.
+- The active Analytics service has the read-only `ProcureCostInternalAuth__ApiKey` secret mount restored. Its internal purchase-cost route returned HTTP `200` instead of the previous authentication failure.
+- `gba-procure-scheduler.service` completed a full watchdog cycle for all 506 producers with zero failures; Redis and Mongo connections were confirmed in the scheduler log.
+- `gba-docker-firewall.service` is active. `DOCKER-USER` permits established traffic and public ports `80/443`, then drops other ingress on `ens10f0`; host AI ports `8000:8006` are also dropped on that interface.
+
 ## Runtime recovery record
 
 - Removed 10,448 stale BuildKit leases dated before 2026-09-01; non-build container and image leases were left intact.
