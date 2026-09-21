@@ -1,0 +1,18 @@
+# DEV redeploy from the latest fetched integration branches on 2026-09-21.
+services:
+  data-concord:
+    image: gba-data-concord:main-39c51a6e7-20260921
+    labels:
+      gba.release: dev-main-redeploy-20260921
+  gba-console:
+    image: gba-console:main-bb46c50c-20260921
+    labels:
+      gba.release: dev-main-redeploy-20260921
+  gba-ecommerce-api:
+    image: gba-ecommerce-api:development-62a71105-20260921-fixed
+    labels:
+      gba.release: dev-main-redeploy-20260921
+  gba-ecommerce:
+    image: gba-ecommerce:development-58745b21-20260921
+    labels:
+      gba.release: dev-main-redeploy-20260921
