@@ -1,7 +1,7 @@
 # DEV release for Desk tasks 1253, 1254, and 1263 on 2026-09-22.
 services:
   data-concord:
-    image: gba-data-concord:main-b500dbeb-20260922
+    image: gba-data-concord:main-1175bdcb-20260922
     labels:
       gba.release: dev-desk-1253-1254-1263-20260922
   gba-console:
