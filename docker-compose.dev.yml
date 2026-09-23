@@ -138,7 +138,7 @@ services:
   gba-console:
     image: gba-console:latest
     build:
-      context: ../gba_console
+      context: ${GBA_CONSOLE_BUILD_CONTEXT:-../gba_console}
       args:
         VITE_API_BASE_URL: "/"
         VITE_API_LANGUAGE: "uk"

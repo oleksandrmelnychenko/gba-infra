@@ -1,0 +1,13 @@
+services:
+  data-concord:
+    image: gba-data-concord:main-94ecec0bf-20260923
+    build:
+      context: /root/projects/gba-release-worktrees/integrate-server-20260923
+  data-analytics:
+    image: gba-data-analytics:main-94ecec0bf-20260923
+    build:
+      context: /root/projects/gba-release-worktrees/integrate-server-20260923
+  gba-console:
+    image: gba-console:main-3c7c53df-20260923
+    build:
+      context: /root/projects/gba-release-worktrees/integrate-console-20260923

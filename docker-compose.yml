@@ -84,7 +84,7 @@ services:
   data-concord:
     image: gba-data-concord:latest
     build:
-      context: ../gba-server
+      context: ${GBA_SERVER_BUILD_CONTEXT:-../gba-server}
       args:
         PROJECT: Global.Business.Assistant.Api
       labels:
@@ -126,7 +126,7 @@ services:
   data-analytics:
     image: gba-data-analytics:latest
     build:
-      context: ../gba-server
+      context: ${GBA_SERVER_BUILD_CONTEXT:-../gba-server}
       args:
         PROJECT: Global.Business.Assistant.Analytics
       labels:
@@ -160,7 +160,7 @@ services:
   gba-ecommerce-api:
     image: gba-ecommerce-api:latest
     build:
-      context: ../gba-ecommerce-api
+      context: ${GBA_ECOMMERCE_API_BUILD_CONTEXT:-../gba-ecommerce-api}
       labels:
         gba.git.sha: "${GBA_ECOMMERCE_API_GIT_SHA:-unknown}"
     environment:
@@ -221,7 +221,7 @@ services:
   gba-ecommerce:
     image: gba-ecommerce:latest
     build:
-      context: ../gba_ecommerce
+      context: ${GBA_ECOMMERCE_BUILD_CONTEXT:-../gba_ecommerce}
       labels:
         gba.git.sha: "${GBA_ECOMMERCE_GIT_SHA:-unknown}"
     depends_on:
