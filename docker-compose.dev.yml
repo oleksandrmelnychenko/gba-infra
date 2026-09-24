@@ -103,6 +103,9 @@ services:
       - "35982:35982"
     volumes:
       - aspnet-dataprotection-keys-dev:/root/.aspnet/DataProtection-Keys
+    secrets:
+      - source: ProcureCostInternalAuth__ApiKey
+        target: ProcureCostInternalAuth:ApiKey
     restart: unless-stopped
 
   gba-ecommerce-api:
@@ -249,6 +252,8 @@ secrets:
     file: ./secrets/dev/Anthropic__ApiKey
   Storefront__PriceTokenSecret:
     file: ./secrets/dev/Storefront__PriceTokenSecret
+  ProcureCostInternalAuth__ApiKey:
+    file: ./secrets/dev/ProcureCostInternalAuth__ApiKey
 
 volumes:
   mssql-data:
