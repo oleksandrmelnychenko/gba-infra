@@ -1,0 +1,11 @@
+# DEV BUG-1274 native report pilot. Build artifacts come from isolated worktrees.
+# Recreate only data-analytics and gba-console; keep data-concord on its current image.
+services:
+  data-analytics:
+    image: gba-data-analytics:bug1274-reports-a5b8483
+    labels:
+      gba.release: bug-1274-native-reports-20260925
+  gba-console:
+    image: gba-console:reports-6510270
+    labels:
+      gba.release: bug-1274-native-reports-20260925

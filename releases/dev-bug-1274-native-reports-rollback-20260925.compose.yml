@@ -1,0 +1,7 @@
+# Exact local rollback images captured before the BUG-1274 DEV report pilot.
+# Use with docker-compose.yml and docker-compose.dev.yml for only these services.
+services:
+  data-analytics:
+    image: gba-data-analytics:pre-bug1274-20260925
+  gba-console:
+    image: gba-console:pre-report1274-20260925
