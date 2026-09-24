@@ -44,4 +44,7 @@ The proposed sync release is held: its ordinary sales path can issue two
 period-wide 1C lineage reads with 3,600-second command timeouts. Simply
 skipping those reads would leave accepted local lineage potentially stale
 after a sale changes. A bounded reader or a proven local invalidation rule is
-required before activating that service or doing a full reset.
+required before activating that service or doing a full reset. The local
+invalidation proposal is also blocked by concurrent exact-sale replay, and
+the normal sync's deferred sale effects require fresh lineage in the same
+run. The isolated sync candidate remains review-only.
