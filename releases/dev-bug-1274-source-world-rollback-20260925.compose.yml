@@ -1,0 +1,6 @@
+# DEV rollback to the two running images tagged immediately before source-world activation.
+services:
+  data-analytics:
+    image: gba-data-analytics:pre-sourceworld-20260925
+  gba-console:
+    image: gba-console:pre-sourceworld-20260925

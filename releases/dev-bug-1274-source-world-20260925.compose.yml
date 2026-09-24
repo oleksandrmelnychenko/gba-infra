@@ -1,0 +1,10 @@
+# DEV source-38 exact Fenix/AMG world selection. Keep data-concord unchanged.
+services:
+  data-analytics:
+    image: gba-data-analytics:bug1274-world-23b58b2
+    labels:
+      gba.release: bug-1274-source-world-20260925
+  gba-console:
+    image: gba-console:reports-world-379a6b2
+    labels:
+      gba.release: bug-1274-source-world-20260925
