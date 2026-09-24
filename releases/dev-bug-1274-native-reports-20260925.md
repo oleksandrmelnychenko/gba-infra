@@ -40,3 +40,8 @@ historical XLS numerical parity or all periods. Source 38 still refuses the
 AMG-incomplete day. The current `data-concord` image does not contain the
 new supplier Provider-role publisher, so a full reset needs a separate sync
 release and guarded data restoration before these pilot scopes are ready.
+The proposed sync release is held: its ordinary sales path can issue two
+period-wide 1C lineage reads with 3,600-second command timeouts. Simply
+skipping those reads would leave accepted local lineage potentially stale
+after a sale changes. A bounded reader or a proven local invalidation rule is
+required before activating that service or doing a full reset.
