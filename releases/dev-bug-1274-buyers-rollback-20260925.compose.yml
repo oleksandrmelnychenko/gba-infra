@@ -1,0 +1,6 @@
+# Return only the two replaced DEV services to the exact prior image IDs.
+services:
+  data-analytics:
+    image: gba-data-analytics:pre-buyers-20260925
+  gba-console:
+    image: gba-console:pre-buyers-20260925

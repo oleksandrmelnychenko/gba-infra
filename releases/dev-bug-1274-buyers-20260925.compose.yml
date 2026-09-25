@@ -1,0 +1,10 @@
+# DEV source-38 exact Fenix «Покупці» subtree selection.
+services:
+  data-analytics:
+    image: gba-data-analytics:bug1274-buyers-6467796
+    labels:
+      gba.release: bug-1274-buyers-20260925
+  gba-console:
+    image: gba-console:reports-buyers-8680c59
+    labels:
+      gba.release: bug-1274-buyers-20260925
