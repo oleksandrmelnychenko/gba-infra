@@ -39,6 +39,7 @@ services:
       FenixClientManagerRefresh__ExplicitExecutionEnabled: "false"
       FenixExistingSaleLineageReplay__Enabled: "false"
       FenixExistingSaleLineageReplay__ApplyEnabled: "false"
+      GBA_DATASYNC_ALLOW_OUTCOME_SETTLEMENT_BACKFILL: "false"
   data-analytics:
     image: gba-data-analytics:bug1274-main-fd9822654
     labels:
