@@ -5,9 +5,9 @@
 # and scheduled tasks quiesced during Console QA.
 services:
   data-concord:
-    image: gba-data-concord:bug1274-integrated-main-c738e86
+    image: gba-data-concord:bug1274-integrated-main-4a0ee24
     labels:
-      gba.git.sha: c738e861f66da57c78cbcb7dd68bde70cc85b064
+      gba.git.sha: 4a0ee24246d78d3b05e0529b3684556670c6396e
       gba.release: bug1274-integrated-main-20261007
     environment:
       SchedulerTasks__SchedulingEnabled: "false"
@@ -43,9 +43,9 @@ services:
       FenixExistingSaleLineageReplay__ApplyEnabled: "false"
       GBA_DATASYNC_ALLOW_OUTCOME_SETTLEMENT_BACKFILL: "false"
   data-analytics:
-    image: gba-data-analytics:bug1274-integrated-main-c738e86
+    image: gba-data-analytics:bug1274-integrated-main-4a0ee24
     labels:
-      gba.git.sha: c738e861f66da57c78cbcb7dd68bde70cc85b064
+      gba.git.sha: 4a0ee24246d78d3b05e0529b3684556670c6396e
       gba.release: bug1274-integrated-main-20261007
   gba-console:
     image: gba-console:bug1274-integrated-main-753e7f1

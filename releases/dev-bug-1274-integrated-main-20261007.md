@@ -4,8 +4,8 @@ Prepared on 2026-10-07. This overlay is not currently active on DEV.
 
 | Component | Main code revision | Local image |
 | --- | --- | --- |
-| API | `c738e861f66da57c78cbcb7dd68bde70cc85b064` | `gba-data-concord:bug1274-integrated-main-c738e86` |
-| Analytics | `c738e861f66da57c78cbcb7dd68bde70cc85b064` | `gba-data-analytics:bug1274-integrated-main-c738e86` |
+| API | `4a0ee24246d78d3b05e0529b3684556670c6396e` | `gba-data-concord:bug1274-integrated-main-4a0ee24` |
+| Analytics | `4a0ee24246d78d3b05e0529b3684556670c6396e` | `gba-data-analytics:bug1274-integrated-main-4a0ee24` |
 | Console | `753e7f19b03401d2cdf1cbdaa61000d9a25eb555` | `gba-console:bug1274-integrated-main-753e7f1` |
 
 Console build version: `2026.10.07.0758`. Code is pushed to the server and
@@ -79,3 +79,9 @@ the new Analytics image without networking (14 pages). Text-origin checks
 found no coordinates outside any page; corrected day/settlement tables and
 totals were visually checked on six sampled pages. These are synthetic/owned
 SQL fixtures, not post-reset business amounts or authenticated downloads.
+
+The legacy settlement default's manager/region headers now wrap within their
+columns, matching explicit presentation fields. Focused settlement, presentation
+and layout tests passed 60/60. Its isolated synthetic PDF was visually checked
+with both headers and the unchanged four amounts/final totals visible on page
+two. This follow-up does not close post-reset or authenticated acceptance.
