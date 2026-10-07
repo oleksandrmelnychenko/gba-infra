@@ -4,11 +4,11 @@ Prepared on 2026-10-07. This overlay is not currently active on DEV.
 
 | Component | Main code revision | Local image |
 | --- | --- | --- |
-| API | `4a0ee24246d78d3b05e0529b3684556670c6396e` | `gba-data-concord:bug1274-integrated-main-4a0ee24` |
-| Analytics | `4a0ee24246d78d3b05e0529b3684556670c6396e` | `gba-data-analytics:bug1274-integrated-main-4a0ee24` |
-| Console | `753e7f19b03401d2cdf1cbdaa61000d9a25eb555` | `gba-console:bug1274-integrated-main-753e7f1` |
+| API | `d4dd998a27344789d299276943cce90d7ed27818` | `gba-data-concord:bug1274-integrated-main-d4dd998` |
+| Analytics | `d4dd998a27344789d299276943cce90d7ed27818` | `gba-data-analytics:bug1274-integrated-main-d4dd998` |
+| Console | `7abb025e8be3c63833f0da7da31fee9883273613` | `gba-console:bug1274-integrated-main-7abb025` |
 
-Console build version: `2026.10.07.0758`. Code is pushed to the server and
+Console build version: `2026.10.07.0920`. Code is pushed to the server and
 Console main branches. Subsequent delivery-document commits do not change the
 source compiled into these images.
 
@@ -85,3 +85,23 @@ columns, matching explicit presentation fields. Focused settlement, presentation
 and layout tests passed 60/60. Its isolated synthetic PDF was visually checked
 with both headers and the unchanged four amounts/final totals visible on page
 two. This follow-up does not close post-reset or authenticated acceptance.
+
+The regional matrix follow-up exercised the actual SQL reader on a disposable
+synthetic database, then the actual Console normalizer and XLSX/pdfMake
+exporters for known and unknown quantities. All four files were generated;
+both Excel files preserve exact DTO quantities, and both final PDF pages were
+rendered and visually checked. The PDF font's missing empty-set glyph was
+corrected to «н/д» only in PDF output (16/16 focused Console tests); exact buyer
+filters now say «Покупець» in dataset-39 metadata and both summaries (78/78
+focused server tests). Final matrix browser acceptance must use the existing
+regional panel and its exports, not only the generic pivot. These synthetic
+checks do not certify current data or the original stock formula.
+Matched full React Doctor scans remained 70/100 across 2,636 files with unchanged
+issue counts; the two-file diff scored 93/100. The new Console image's revision,
+build metadata and changed export asset hash match the production build.
+Receipts: `/private/gba-1274-regional-console-export-20261007`.
+
+The independent reset was observed actively deleting from our DEV database
+at 06:08:14 UTC. The earlier preflight status file was stale. Preserve its
+maintenance configuration; report runtime and post-reset/authenticated
+acceptance remain pending.
