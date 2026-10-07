@@ -1,6 +1,7 @@
 # DEV BUG-1274 delivery built from the current main branches.
 # This is the last overlay in the existing DEV compose chain. It pins the
-# reviewed images and keeps every 1C/source worker quiesced during Console QA.
+# reviewed images, enables local business writers, and keeps 1C/source workers
+# and scheduled tasks quiesced during Console QA.
 services:
   data-concord:
     image: gba-data-concord:bug1274-main-fd9822654
@@ -9,7 +10,7 @@ services:
       gba.release: bug-1274-main-20261007
     environment:
       SchedulerTasks__SchedulingEnabled: "false"
-      BackgroundWriters__Enabled: "false"
+      BackgroundWriters__Enabled: "true"
       ManagementTurnoverPeriodSync__Enabled: "false"
       ManagementTurnoverPeriodSync__BackgroundEnabled: "false"
       ManagementTurnoverPeriodSync__CashBalancesEnabled: "false"

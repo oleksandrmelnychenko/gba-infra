@@ -1,16 +1,17 @@
 # DEV BUG-1274 delivery built from the current main branches.
 # Apply only after the independent DEV maintenance operation is cleared.
 # This is the last overlay in the existing DEV compose chain. It pins the
-# reviewed images and keeps every 1C/source worker quiesced during Console QA.
+# reviewed images, enables local business writers, and keeps 1C/source workers
+# and scheduled tasks quiesced during Console QA.
 services:
   data-concord:
-    image: gba-data-concord:bug1274-integrated-main-0071ea0
+    image: gba-data-concord:bug1274-integrated-main-3d9a101
     labels:
-      gba.git.sha: 0071ea0363021c2e746b821981b93f397846edff
+      gba.git.sha: 3d9a101d239dfd91e2043f1912b3d8a5b8ec1783
       gba.release: bug1274-integrated-main-20261007
     environment:
       SchedulerTasks__SchedulingEnabled: "false"
-      BackgroundWriters__Enabled: "false"
+      BackgroundWriters__Enabled: "true"
       ManagementTurnoverPeriodSync__Enabled: "false"
       ManagementTurnoverPeriodSync__BackgroundEnabled: "false"
       ManagementTurnoverPeriodSync__CashBalancesEnabled: "false"
@@ -42,9 +43,9 @@ services:
       FenixExistingSaleLineageReplay__ApplyEnabled: "false"
       GBA_DATASYNC_ALLOW_OUTCOME_SETTLEMENT_BACKFILL: "false"
   data-analytics:
-    image: gba-data-analytics:bug1274-integrated-main-0071ea0
+    image: gba-data-analytics:bug1274-integrated-main-3d9a101
     labels:
-      gba.git.sha: 0071ea0363021c2e746b821981b93f397846edff
+      gba.git.sha: 3d9a101d239dfd91e2043f1912b3d8a5b8ec1783
       gba.release: bug1274-integrated-main-20261007
   gba-console:
     image: gba-console:bug1274-integrated-main-753e7f1

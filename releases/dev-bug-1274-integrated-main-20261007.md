@@ -4,8 +4,8 @@ Prepared on 2026-10-07. This overlay is not currently active on DEV.
 
 | Component | Main code revision | Local image |
 | --- | --- | --- |
-| API | `0071ea0363021c2e746b821981b93f397846edff` | `gba-data-concord:bug1274-integrated-main-0071ea0` |
-| Analytics | `0071ea0363021c2e746b821981b93f397846edff` | `gba-data-analytics:bug1274-integrated-main-0071ea0` |
+| API | `3d9a101d239dfd91e2043f1912b3d8a5b8ec1783` | `gba-data-concord:bug1274-integrated-main-3d9a101` |
+| Analytics | `3d9a101d239dfd91e2043f1912b3d8a5b8ec1783` | `gba-data-analytics:bug1274-integrated-main-3d9a101` |
 | Console | `753e7f19b03401d2cdf1cbdaa61000d9a25eb555` | `gba-console:bug1274-integrated-main-753e7f1` |
 
 Console build version: `2026.10.07.0758`. Code is pushed to the server and
@@ -30,7 +30,12 @@ DEV entered separately configured maintenance mode
 disabled writers were restored; Analytics and Console remain stopped. The
 existing `dev-bug-1274-main-20261007.compose.yml` was restored unchanged.
 No report release should override the maintenance operation. This overlay
-keeps source sync, source capture, scheduling and background writers off.
+keeps source sync, source capture and scheduling off. Both normal BUG-1274
+release overlays set `BackgroundWriters__Enabled=true`: local sales, stock
+deductions and other business writers must remain operational after cutover.
+The independent maintenance overlay may temporarily override this to false
+while reset/sync is in progress. Changing the normal overlays does not change
+the currently running maintenance API.
 
 After maintenance is cleared, append this overlay to the actual complete DEV
 configuration chain. Historical overlays require `GBA_REPORT_CONCORD_IMAGE`
@@ -47,3 +52,21 @@ basis consistently; saved legacy modes retain their register-quantity label.
 The supplier management-currency witness and storage-unit equivalence, exact
 return cost/supplier coverage, and matrix source-formula/selector acceptance
 remain open. These prepared images do not close those data/calculation gates.
+
+The export-caption follow-up passed 81/81 targeted, 48/48 supplier and 25/25
+shared preview/workbook cases (overlapping runs). Native day/supplier exports
+resolve organization names without merging equal-name identities. Settlement
+currency headings are consistent from the picker through Excel; supplier
+workbooks have their own title. API and Analytics image labels and compiled
+Contracts/Documents DLL hashes match the fresh Release publishes.
+
+Fourteen sampled pages from the retained six pre-maintenance PDFs were
+visually inspected. This sample and the new regression fixtures do not prove
+post-reset data coverage or real Console downloads. The user subsequently
+confirmed an upcoming full data reset. Preserve maintenance and reverify
+the resulting synchronized database.
+
+The latest source check found one SQL socket in the maintenance API while
+the independent `Source preflight` supervisors were alive. Report verification
+did not initiate it. Do not claim that all source sessions are currently off;
+repeat that gate after the independent operation finishes.
