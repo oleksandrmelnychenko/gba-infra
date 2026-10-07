@@ -4,11 +4,11 @@ Prepared on 2026-10-07. This overlay is not currently active on DEV.
 
 | Component | Main code revision | Local image |
 | --- | --- | --- |
-| API | `4aecde390c2e65d462d2636102804d7da96fc062` | `gba-data-concord:bug1274-integrated-main-4aecde390` |
-| Analytics | `4aecde390c2e65d462d2636102804d7da96fc062` | `gba-data-analytics:bug1274-integrated-main-4aecde390` |
-| Console | `e085e5566fbd6ac989eaea3700f3d1d10f7b6797` | `gba-console:bug1274-integrated-main-e085e5566` |
+| API | `0071ea0363021c2e746b821981b93f397846edff` | `gba-data-concord:bug1274-integrated-main-0071ea0` |
+| Analytics | `0071ea0363021c2e746b821981b93f397846edff` | `gba-data-analytics:bug1274-integrated-main-0071ea0` |
+| Console | `753e7f19b03401d2cdf1cbdaa61000d9a25eb555` | `gba-console:bug1274-integrated-main-753e7f1` |
 
-Console build version: `2026.10.07.0731`. Code is pushed to the server and
+Console build version: `2026.10.07.0758`. Code is pushed to the server and
 Console main branches. Subsequent delivery-document commits do not change the
 source compiled into these images.
 
@@ -40,3 +40,10 @@ runtime, source workers off, and zero source sockets. A new genuine DEV login
 is required for the six-form browser, preview and Excel/PDF download gate.
 Reverify SQL on the resulting database; pre-maintenance receipts cannot prove
 post-reset data coverage. BUG-1274 remains open.
+
+The supplier quantity-caption follow-up passed 45/45 server and 50/50 Console
+focused tests. Preview, Excel and the form now name the executed quantity
+basis consistently; saved legacy modes retain their register-quantity label.
+The supplier management-currency witness and storage-unit equivalence, exact
+return cost/supplier coverage, and matrix source-formula/selector acceptance
+remain open. These prepared images do not close those data/calculation gates.
