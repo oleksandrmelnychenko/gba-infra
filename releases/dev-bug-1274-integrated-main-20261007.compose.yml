@@ -1,0 +1,52 @@
+# DEV BUG-1274 delivery built from the current main branches.
+# This is the last overlay in the existing DEV compose chain. It pins the
+# reviewed images and keeps every 1C/source worker quiesced during Console QA.
+services:
+  data-concord:
+    image: gba-data-concord:bug1274-integrated-main-4aecde390
+    labels:
+      gba.git.sha: 4aecde390c2e65d462d2636102804d7da96fc062
+      gba.release: bug1274-integrated-main-20261007
+    environment:
+      SchedulerTasks__SchedulingEnabled: "false"
+      BackgroundWriters__Enabled: "false"
+      ManagementTurnoverPeriodSync__Enabled: "false"
+      ManagementTurnoverPeriodSync__BackgroundEnabled: "false"
+      ManagementTurnoverPeriodSync__CashBalancesEnabled: "false"
+      ManagementTurnoverPeriodSync__NttBalancesEnabled: "false"
+      ManagementTurnoverPeriodSync__EmployeeGrossProfitCostEnabled: "false"
+      ManagementTurnoverPeriodSync__EmployeeCostFullGrainEnabled: "false"
+      ManagementTurnoverPeriodSync__EmployeeCostReceiptEndpointsEnabled: "false"
+      ManagementTurnoverPeriodSync__FinancialSourceContextEnabled: "false"
+      PriceAnalysisSync__Enabled: "false"
+      PriceAnalysisSync__BackgroundEnabled: "false"
+      PriceAnalysisSync__CompanySequentialInitialEnabled: "false"
+      DiscountReportSync__Enabled: "false"
+      DiscountReportSync__BackgroundEnabled: "false"
+      FinancialOpeningSync__Enabled: "false"
+      FinancialOpeningSync__BackgroundEnabled: "false"
+      FinancialOpeningSync__CashBalancesEnabled: "false"
+      FinancialOpeningSync__NttBalancesEnabled: "false"
+      NativeProvidedDiscountSync__Enabled: "false"
+      NativeSaleComparisonSync__Enabled: "false"
+      FenixDocumentSettlementCapture__Enabled: "false"
+      FenixCashDayCapture__Enabled: "false"
+      FenixCustomerGraphOnlyRefresh__Enabled: "false"
+      FenixGoodsDayRefresh__PipelineEnabled: "false"
+      FenixGoodsDayRefresh__SourceEnabled: "false"
+      FenixGoodsDayRefresh__ExplicitExecutionEnabled: "false"
+      FenixGoodsDayRefresh__AutomaticExecutionEnabled: "false"
+      FenixClientManagerRefresh__ExplicitExecutionEnabled: "false"
+      FenixExistingSaleLineageReplay__Enabled: "false"
+      FenixExistingSaleLineageReplay__ApplyEnabled: "false"
+      GBA_DATASYNC_ALLOW_OUTCOME_SETTLEMENT_BACKFILL: "false"
+  data-analytics:
+    image: gba-data-analytics:bug1274-integrated-main-4aecde390
+    labels:
+      gba.git.sha: 4aecde390c2e65d462d2636102804d7da96fc062
+      gba.release: bug1274-integrated-main-20261007
+  gba-console:
+    image: gba-console:bug1274-integrated-main-e085e5566
+    labels:
+      gba.git.sha: e085e5566fbd6ac989eaea3700f3d1d10f7b6797
+      gba.release: bug1274-integrated-main-20261007
