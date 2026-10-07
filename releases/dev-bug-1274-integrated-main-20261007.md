@@ -4,8 +4,8 @@ Prepared on 2026-10-07. This overlay is not currently active on DEV.
 
 | Component | Main code revision | Local image |
 | --- | --- | --- |
-| API | `3d9a101d239dfd91e2043f1912b3d8a5b8ec1783` | `gba-data-concord:bug1274-integrated-main-3d9a101` |
-| Analytics | `3d9a101d239dfd91e2043f1912b3d8a5b8ec1783` | `gba-data-analytics:bug1274-integrated-main-3d9a101` |
+| API | `c738e861f66da57c78cbcb7dd68bde70cc85b064` | `gba-data-concord:bug1274-integrated-main-c738e86` |
+| Analytics | `c738e861f66da57c78cbcb7dd68bde70cc85b064` | `gba-data-analytics:bug1274-integrated-main-c738e86` |
 | Console | `753e7f19b03401d2cdf1cbdaa61000d9a25eb555` | `gba-console:bug1274-integrated-main-753e7f1` |
 
 Console build version: `2026.10.07.0758`. Code is pushed to the server and
@@ -70,3 +70,12 @@ The latest source check found one SQL socket in the maintenance API while
 the independent `Source preflight` supervisors were alive. Report verification
 did not initiate it. Do not claim that all source sessions are currently off;
 repeat that gate after the independent operation finishes.
+
+The final images also fix short-table PDF pagination and include the concurrent
+main sales write-off correction `5cfa22172`. Final layout/caption tests passed
+96/96, the required disposable SQL case 1/1, and the sales source-policy gate
+9/9. Eight regression workbooks converted through the production helper in
+the new Analytics image without networking (14 pages). Text-origin checks
+found no coordinates outside any page; corrected day/settlement tables and
+totals were visually checked on six sampled pages. These are synthetic/owned
+SQL fixtures, not post-reset business amounts or authenticated downloads.
