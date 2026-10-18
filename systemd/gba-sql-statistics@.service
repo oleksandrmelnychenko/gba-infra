@@ -1,0 +1,15 @@
+[Unit]
+Description=GBA SQL Server statistics maintenance (%i)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/projects/gba-infra
+EnvironmentFile=/root/projects/gba-infra/sql/maintenance/%i.env
+ExecStart=/root/projects/gba-infra/scripts/sql-statistics.sh
+TimeoutStartSec=3h
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+UMask=0077

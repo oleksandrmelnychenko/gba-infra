@@ -76,6 +76,72 @@ post-sync reconciliation entry points, use
   `INTERNAL_API_KEY` in `/root/projects/gba-forecast/.env`; otherwise
   `/sales/prediction/get` returns `503 ai_auth_misconfigured`.
 
+## SQL Server instance settings and statistics maintenance
+
+Both are idempotent and run against a container through `docker exec`, so the
+same commands serve DEV and PROD. They were measured on DEV in October 2026;
+the before/after numbers are in `gba-docs/db-optimization/results.md`.
+
+**Instance settings** (`sql/instance-settings.sql`, wrapper
+`scripts/sql-instance-settings.sh`): server `MAXDOP 8`, `cost threshold for
+parallelism 50`, `optimize for ad hoc workloads 1`, `max server memory` 32 GB,
+eight tempdb data files pre-sized to 4 GB with 512 MB growth (tempdb log 1 GB),
+and Query Store `READ_WRITE` on `ConcordDb_V5` and `ConcordDb_Data`. Every value
+can be overridden through `GBA_SQL_*` variables (see the wrapper). `RECONFIGURE`
+flushes the plan cache, so expect one round of recompiles.
+
+`max server memory` must leave room for everything else on the host. DEV's
+measured working set is about 17 GB. On 2026-10-18 the host's global OOM killer
+killed DEV's `sqlservr` (52 GB RSS under the old 48 GB setting) while builds,
+tests and Elasticsearch shared the 123 GB.
+
+```bash
+GBA_MSSQL_CONTAINER=gba-dev-gba-mssql-1 ./scripts/sql-instance-settings.sh
+```
+
+**Nightly statistics** (`sql/maintenance/update-statistics.sql`, wrapper
+`scripts/sql-statistics.sh`, units `systemd/gba-sql-statistics@.{service,timer}`):
+every night at 03:30 Kyiv, it runs `UPDATE STATISTICS … WITH FULLSCAN` for every
+statistic that is unset, filtered and modified, or modified on at least 500
+rows and 5 % of the table. It works in order of priority, within a 90-minute
+budget, with a short pause between statistics. Each run is skipped, or stopped
+part-way, while a data sync holds `GBA_DATASYNC_GLOBAL_LOCK`. The
+`GBA_STATS_*` variables cover the budget, `GBA_STATS_SCAN_MODE=FULLSCAN|DEFAULT`,
+`GBA_STATS_PAUSE_MS` and `GBA_STATS_MAXDOP`. SQL Server Agent is not enabled in
+these containers, so a host timer runs it. The instance name selects
+`sql/maintenance/<instance>.env`:
+
+```bash
+sudo install -m 0644 systemd/gba-sql-statistics@.service systemd/gba-sql-statistics@.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now gba-sql-statistics@dev.timer
+journalctl -u gba-sql-statistics@dev.service
+```
+
+Refresh only after the read-path covering indexes are in place: gba-server
+migration `20261019010000_AddReadPathCoveringIndexes`. Without
+`IX_IncomePaymentOrder_Agreement_Number_FromDate`, fresh statistics make
+form 41 choose a plan that reads 20 M pages.
+
+For a daytime refresh while people use the system, use the gentle mode:
+
+```bash
+GBA_MSSQL_CONTAINER=gba-dev-gba-mssql-1 GBA_STATS_SCAN_MODE=DEFAULT GBA_STATS_PAUSE_MS=2000 GBA_STATS_MAXDOP=2 ./scripts/sql-statistics.sh
+```
+
+**At PROD cutover** apply the same two pieces to the PROD container. Check
+`max server memory` first, because DEV and PROD share this host:
+
+```bash
+GBA_MSSQL_CONTAINER=gba-prod-gba-mssql-1 GBA_SQL_MAX_SERVER_MEMORY_MB=<size> ./scripts/sql-instance-settings.sh
+sudo systemctl enable --now gba-sql-statistics@prod.timer
+GBA_MSSQL_CONTAINER=gba-prod-gba-mssql-1 ./scripts/sql-statistics.sh
+```
+
+The last command is a one-off refresh right after the final load and the
+gba-server migrations. Do not shrink the PROD log until the final sync has
+finished and been backed up.
+
 ## Security checks
 
 Run this after compose changes or a server restart:
