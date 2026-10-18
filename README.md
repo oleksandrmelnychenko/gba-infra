@@ -119,7 +119,7 @@ journalctl -u gba-sql-statistics@dev.service
 ```
 
 Refresh only after the read-path covering indexes are in place: gba-server
-migration `20261019010000_AddReadPathCoveringIndexes`. Without
+migration `20261019100000_AddReadPathCoveringIndexes`. Without
 `IX_IncomePaymentOrder_Agreement_Number_FromDate`, fresh statistics make
 form 41 choose a plan that reads 20 M pages.
 
