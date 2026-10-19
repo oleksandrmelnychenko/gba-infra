@@ -55,6 +55,41 @@ die() {
     exit 1
 }
 
+ensure_token_keys() {
+    local private_key="$SECRET_DIR/Security__JwtPrivateKey"
+    local public_key="$SECRET_DIR/Security__JwtPublicKey"
+
+    command -v openssl >/dev/null 2>&1 || die 'openssl is required to create the RS256 token key pair.'
+
+    if [[ -s "$private_key" ]] && ! grep -q -- 'CHANGE_ME' "$private_key"; then
+        if [[ ! -s "$public_key" ]] || grep -q -- 'CHANGE_ME' "$public_key"; then
+            openssl pkey -in "$private_key" -pubout -out "$public_key"
+            chmod 600 -- "$public_key"
+            printf 'Derived %s from the existing private key.\n' "$public_key"
+        fi
+        return
+    fi
+
+    local generated
+    generated="$(mktemp "$SECRET_DIR/.jwt-private.XXXXXX")"
+    openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out "$generated" 2>/dev/null
+    chmod 600 -- "$generated"
+    mv -f -- "$generated" "$private_key"
+    openssl pkey -in "$private_key" -pubout -out "$public_key"
+    chmod 600 -- "$public_key"
+    printf 'Generated a local RS256 token key pair in %s.\n' "$SECRET_DIR"
+}
+
+check_token_keys() {
+    command -v openssl >/dev/null 2>&1 || die 'openssl is required to validate the RS256 token key pair.'
+
+    local derived
+    derived="$(openssl pkey -in "$SECRET_DIR/Security__JwtPrivateKey" -pubout 2>/dev/null)" ||
+        die 'Security__JwtPrivateKey is not a readable unencrypted private key.'
+    [[ "$derived" == "$(cat -- "$SECRET_DIR/Security__JwtPublicKey")" ]] ||
+        die "Security__JwtPublicKey does not match Security__JwtPrivateKey. Delete both and run '$0 init'."
+}
+
 init() {
     if [[ ! -e "$ENV_FILE" ]]; then
         cp -- "$ENV_TEMPLATE" "$ENV_FILE"
@@ -69,6 +104,7 @@ init() {
 
     chmod 600 -- "$ENV_FILE"
     find "$SECRET_DIR" -type f -exec chmod 600 {} +
+    ensure_token_keys
     printf 'Replace every CHANGE_ME value, then run: %s check\n' "$0"
 }
 
@@ -94,6 +130,8 @@ check() {
         die 'Placeholder values remain in .env.dev or secrets/dev.'
     fi
 
+    check_token_keys
+
     if find "$SECRET_DIR" -type f -perm /027 -print -quit | grep -q .; then
         die 'Secret files may not be group-writable/executable or world-accessible.'
     fi
@@ -107,7 +145,8 @@ usage() {
 Usage: scripts/local-dev.sh <command>
 
 Commands:
-  init   Create ignored .env.dev and secrets/dev files from safe templates.
+  init   Create ignored .env.dev and secrets/dev files from safe templates
+         and generate the local RS256 token key pair.
   check  Validate repositories, secrets, permissions, and Compose configuration.
   up     Validate, build, and start the complete Docker Compose stack.
   ps     Show the local stack status.

@@ -14,7 +14,7 @@ their contents into chat, tickets, documentation, or source control. Keep files
 mode `600`; a root-owned file may be `640` only when its group is the dedicated
 container runtime group and has no write permission.
 
-gba-server signs its access tokens with RS256. Generate the key pair once:
+gba-server signs its access tokens with RS256. `scripts/local-dev.sh init` generates the key pair (3072-bit RSA) when these files still hold placeholders, and `check` verifies that they match. To create it by hand:
 
     openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out Security__JwtPrivateKey
     openssl pkey -in Security__JwtPrivateKey -pubout -out Security__JwtPublicKey
