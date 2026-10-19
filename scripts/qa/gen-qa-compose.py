@@ -97,11 +97,12 @@ def main() -> None:
             if target in DATA_BIND_TARGETS:
                 folder = STATE_DIR / 'concord' / Path(target).name
                 folder.mkdir(parents=True, exist_ok=True)
-                volumes.append({'type': 'bind', 'source': str(folder), 'target': target})
+                volumes.append({'type': 'bind', 'source': str(folder), 'target': target, 'bind': {'create_host_path': False}})
             elif volume.get('type') == 'bind' and volume.get('read_only') and (
                     target.startswith('/run/gba/')
                     or (target.startswith('/run/secrets/') and 'readonly' in Path(volume['source']).name.lower())):
-                volumes.append({'type': 'bind', 'source': volume['source'], 'target': target, 'read_only': True})
+                volumes.append({'type': 'bind', 'source': volume['source'], 'target': target, 'read_only': True,
+                                'bind': {'create_host_path': False}})
 
         service = {
             'image': source['image'],
