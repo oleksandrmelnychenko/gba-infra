@@ -13,3 +13,12 @@ For a team handoff, transfer the populated `secrets/dev` directory and
 their contents into chat, tickets, documentation, or source control. Keep files
 mode `600`; a root-owned file may be `640` only when its group is the dedicated
 container runtime group and has no write permission.
+
+gba-server signs its access tokens with RS256. Generate the key pair once:
+
+    openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out Security__JwtPrivateKey
+    openssl pkey -in Security__JwtPrivateKey -pubout -out Security__JwtPublicKey
+
+Only data-concord mounts `Security__JwtPrivateKey`. data-analytics and the shop
+API mount `Security__JwtPublicKey`. `ShopAuth__JwtKey` is the shop's own HS256
+key (at least 32 random bytes, different from `Security__JwtKey`).

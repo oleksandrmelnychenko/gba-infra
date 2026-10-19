@@ -24,6 +24,12 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
+      Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-true}"
+      Security__AccessTokenLifetimeMinutes: "60"
+      Security__RefreshTokenLifetimeMinutes: "43200"
+      ShopAuth__JwtIssuer: "GbaShop"
+      ShopAuth__JwtAudience: "GbaShop"
+      ShopAuth__AcceptLegacySharedTokens: "false"
       GBA_CRM_SERVER_URL: "https://gba-api-dev.85.17.167.167.nip.io"
       GBA_ECOMMERCE_CLIENT_URL: "https://shop-dev.85.17.167.167.nip.io"
       RecommendationApi__Url: "http://host.docker.internal:8000"
@@ -80,6 +86,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
+      Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-true}"
+      ShopAuth__JwtIssuer: "GbaShop"
+      ShopAuth__JwtAudience: "GbaShop"
+      ShopAuth__AcceptLegacySharedTokens: "false"
       Security__CorsOrigins__0: "http://localhost:3000"
       Security__CorsOrigins__1: "http://localhost:7000"
       Security__CorsOrigins__2: "http://localhost:8081"
@@ -111,8 +121,10 @@ services:
   gba-ecommerce-api:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      Security__JwtIssuer: "ConcordCRM"
-      Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
+      Security__JwtIssuer: "GbaShop"
+      Security__JwtAudience: "GbaShop"
+      GbaServerAuth__JwtIssuer: "ConcordCRM"
+      GbaServerAuth__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
       Security__CorsOrigins__0: "http://localhost:3000"
       Security__CorsOrigins__1: "http://localhost:7000"
       Security__CorsOrigins__2: "http://localhost:8081"
@@ -184,8 +196,8 @@ services:
       # secret used by the APIs. The value is loaded from the Docker secret by the command
       # below and is also the documented DEV fallback for stable public price-token sealing.
       AUTH_JWT_ALGORITHM: "HS256"
-      AUTH_JWT_ISSUER: "ConcordCRM"
-      AUTH_JWT_AUDIENCE: "https://gba-api-dev.85.17.167.167.nip.io/"
+      AUTH_JWT_ISSUER: "GbaShop"
+      AUTH_JWT_AUDIENCE: "GbaShop"
       APP_ALLOWED_ORIGINS: "https://shop-dev.85.17.167.167.nip.io"
       RATE_LIMIT_CLIENT_IP_HEADER: "x-forwarded-for"
       API_BASE_URL: "http://gba-ecommerce-api:62506"
@@ -196,7 +208,7 @@ services:
       NEXT_PUBLIC_STATIC_BASE_URL: "https://gba-api-dev.85.17.167.167.nip.io"
       IMAGE_SEARCH_MODEL: "claude-sonnet-5"
     secrets:
-      - source: Security__JwtKey
+      - source: ShopAuth__JwtKey
         target: StorefrontAuthSecret
       - source: Storefront__PriceTokenSecret
         target: StorefrontPriceTokenSecret
@@ -238,6 +250,12 @@ secrets:
     file: ./secrets/dev/ConnectionStrings__AmgOneCConnectionString
   Security__JwtKey:
     file: ./secrets/dev/Security__JwtKey
+  Security__JwtPrivateKey:
+    file: ./secrets/dev/Security__JwtPrivateKey
+  Security__JwtPublicKey:
+    file: ./secrets/dev/Security__JwtPublicKey
+  ShopAuth__JwtKey:
+    file: ./secrets/dev/ShopAuth__JwtKey
   Security__PriceEncryptionKey:
     file: ./secrets/dev/Security__PriceEncryptionKey
   Security__PriceEncryptionIV:

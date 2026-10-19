@@ -33,6 +33,9 @@ readonly -a REQUIRED_SECRETS=(
     Elasticsearch__AppPassword
     Elasticsearch__Password
     Security__JwtKey
+    Security__JwtPrivateKey
+    Security__JwtPublicKey
+    ShopAuth__JwtKey
     Security__PriceEncryptionIV
     Security__PriceEncryptionKey
     Storefront__PriceTokenSecret

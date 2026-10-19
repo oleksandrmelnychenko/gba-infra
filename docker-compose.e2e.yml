@@ -61,6 +61,8 @@ services:
         target: ConnectionStrings:VehicleRegistryConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
+      - source: Security__JwtPrivateKey
+        target: Security:JwtPrivateKey
       - source: EcommerceInternalAuth__ApiKey
         target: EcommerceInternalAuth:ApiKey
     volumes:
@@ -101,6 +103,8 @@ services:
         target: ConnectionStrings:LocalIdentityConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
+      - source: Security__JwtPublicKey
+        target: Security:JwtPublicKey
     volumes:
       - gba-e2e-dp-keys:/root/.aspnet/DataProtection-Keys
     ports:
@@ -152,6 +156,10 @@ secrets:
     file: ./secrets/e2e/ConnectionStrings__VehicleRegistryConnectionString
   Security__JwtKey:
     file: ./secrets/dev/Security__JwtKey
+  Security__JwtPrivateKey:
+    file: ./secrets/dev/Security__JwtPrivateKey
+  Security__JwtPublicKey:
+    file: ./secrets/dev/Security__JwtPublicKey
   EcommerceInternalAuth__ApiKey:
     file: ./secrets/dev/EcommerceInternalAuth__ApiKey
 

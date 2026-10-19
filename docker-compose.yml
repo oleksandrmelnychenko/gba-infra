@@ -110,6 +110,10 @@ services:
         target: ConnectionStrings:AmgOneCConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
+      - source: Security__JwtPrivateKey
+        target: Security:JwtPrivateKey
+      - source: ShopAuth__JwtKey
+        target: ShopAuth:JwtKey
       - source: EcommerceInternalAuth__ApiKey
         target: EcommerceInternalAuth:ApiKey
     depends_on:
@@ -146,6 +150,10 @@ services:
         target: ConnectionStrings:AmgOneCConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
+      - source: Security__JwtPublicKey
+        target: Security:JwtPublicKey
+      - source: ShopAuth__JwtKey
+        target: ShopAuth:JwtKey
     depends_on:
       gba-mssql:
         condition: service_healthy
@@ -178,8 +186,10 @@ services:
         target: ConnectionStrings:LocalConnectionString
       - source: ConnectionStrings__LocalIdentityConnectionString
         target: ConnectionStrings:LocalIdentityConnectionString
-      - source: Security__JwtKey
+      - source: ShopAuth__JwtKey
         target: Security:JwtKey
+      - source: Security__JwtPublicKey
+        target: GbaServerAuth:JwtPublicKey
       - source: Security__PriceEncryptionKey
         target: Security:PriceEncryptionKey
       - source: Security__PriceEncryptionIV

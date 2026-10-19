@@ -23,6 +23,12 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://api.${PROD_DOMAIN}/"
+      Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-true}"
+      Security__AccessTokenLifetimeMinutes: "60"
+      Security__RefreshTokenLifetimeMinutes: "43200"
+      ShopAuth__JwtIssuer: "GbaShop"
+      ShopAuth__JwtAudience: "GbaShop"
+      ShopAuth__AcceptLegacySharedTokens: "false"
       GBA_CRM_SERVER_URL: "https://api.${PROD_DOMAIN}"
       GBA_ECOMMERCE_CLIENT_URL: "https://shop.${PROD_DOMAIN}"
       ForecastApi__Url: "${FORECAST_API_URL:-http://host.docker.internal:8006}"
@@ -39,6 +45,10 @@ services:
         target: ConnectionStrings:LocalIdentityConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
+      - source: Security__JwtPrivateKey
+        target: Security:JwtPrivateKey
+      - source: ShopAuth__JwtKey
+        target: ShopAuth:JwtKey
       - source: EcommerceInternalAuth__ApiKey
         target: EcommerceInternalAuth:ApiKey
     volumes:
@@ -53,6 +63,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://api.${PROD_DOMAIN}/"
+      Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-true}"
+      ShopAuth__JwtIssuer: "GbaShop"
+      ShopAuth__JwtAudience: "GbaShop"
+      ShopAuth__AcceptLegacySharedTokens: "false"
       Security__CorsOrigins__0: "https://crm.${PROD_DOMAIN}"
       Security__CorsOrigins__1: "https://shop.${PROD_DOMAIN}"
     secrets: !override
@@ -64,6 +78,10 @@ services:
         target: ConnectionStrings:LocalIdentityConnectionString
       - source: Security__JwtKey
         target: Security:JwtKey
+      - source: Security__JwtPublicKey
+        target: Security:JwtPublicKey
+      - source: ShopAuth__JwtKey
+        target: ShopAuth:JwtKey
     volumes:
       - data-analytics-logs:/app/Logs
       - aspnet-dataprotection-keys:/root/.aspnet/DataProtection-Keys
@@ -72,8 +90,10 @@ services:
   gba-ecommerce-api:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      Security__JwtIssuer: "ConcordCRM"
-      Security__JwtAudience: "https://api.${PROD_DOMAIN}/"
+      Security__JwtIssuer: "GbaShop"
+      Security__JwtAudience: "GbaShop"
+      GbaServerAuth__JwtIssuer: "ConcordCRM"
+      GbaServerAuth__JwtAudience: "https://api.${PROD_DOMAIN}/"
       Security__CorsOrigins__0: "https://shop.${PROD_DOMAIN}"
       Security__CorsOrigins__1: "https://crm.${PROD_DOMAIN}"
     restart: always
@@ -95,9 +115,24 @@ services:
     environment:
       API_BASE_URL: "http://gba-ecommerce-api:62506"
       API_HISTORY_URL: "http://data-analytics:35982"
+      GBA_CORE_API_BASE_URL: "http://data-concord:35981"
       NEXT_PUBLIC_API_BASE_URL: "https://ecom-api.${PROD_DOMAIN}"
       NEXT_PUBLIC_SITE_URL: "https://shop.${PROD_DOMAIN}"
       NEXT_PUBLIC_BASE_URL: "https://shop.${PROD_DOMAIN}"
+      AUTH_JWT_ALGORITHM: "HS256"
+      AUTH_JWT_ISSUER: "GbaShop"
+      AUTH_JWT_AUDIENCE: "GbaShop"
+    secrets:
+      - source: ShopAuth__JwtKey
+        target: StorefrontAuthSecret
+    group_add:
+      - "1654"
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        export AUTH_SECRET="$$(cat /run/secrets/StorefrontAuthSecret)"
+        exec node server.js
     restart: always
 
   caddy:
@@ -141,6 +176,12 @@ secrets:
     file: ./secrets/prod/ConnectionStrings__RemoteIdentityConnectionString
   Security__JwtKey:
     file: ./secrets/prod/Security__JwtKey
+  Security__JwtPrivateKey:
+    file: ./secrets/prod/Security__JwtPrivateKey
+  Security__JwtPublicKey:
+    file: ./secrets/prod/Security__JwtPublicKey
+  ShopAuth__JwtKey:
+    file: ./secrets/prod/ShopAuth__JwtKey
   Security__PriceEncryptionKey:
     file: ./secrets/prod/Security__PriceEncryptionKey
   Security__PriceEncryptionIV:
