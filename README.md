@@ -90,6 +90,15 @@ and Query Store `READ_WRITE` on `ConcordDb_V5` and `ConcordDb_Data`. Every value
 can be overridden through `GBA_SQL_*` variables (see the wrapper). `RECONFIGURE`
 flushes the plan cache, so expect one round of recompiles.
 
+On DEV (`gba-dev-gba-mssql-1`) the wrapper then runs `sql/simple-recovery.sql`:
+`ConcordDb_Data` goes to `RECOVERY SIMPLE`, gets a `CHECKPOINT`, and its log is
+shrunk to 512 MB. DEV takes no log backups (SQL Server Agent is off, and no
+host timer, cron job or script here runs `BACKUP LOG`), so under `FULL` the log
+only grew (`LOG_BACKUP` wait). Applied on DEV 2026-10-19. Other containers skip
+this step unless `GBA_SQL_SIMPLE_RECOVERY_DATABASES` lists databases
+(`GBA_SQL_SIMPLE_RECOVERY_LOG_MB` sets the log size); PROD keeps its recovery
+model.
+
 `max server memory` must leave room for everything else on the host. DEV's
 measured working set is about 17 GB. On 2026-10-18 the host's global OOM killer
 killed DEV's `sqlservr` (52 GB RSS under the old 48 GB setting) while builds,

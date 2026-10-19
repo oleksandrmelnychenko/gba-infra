@@ -19,3 +19,16 @@ docker exec -i -e SQLCMDPASSWORD="$PASSWORD" "$CONTAINER" "$SQLCMD" \
        QueryStoreMaxMB="${GBA_SQL_QUERY_STORE_MB:-2048}" \
        QueryStoreDatabases="${GBA_SQL_QUERY_STORE_DATABASES:-ConcordDb_V5,ConcordDb_Data}" \
     -i /dev/stdin < "$ROOT/sql/instance-settings.sql"
+
+SIMPLE_RECOVERY_DEFAULT=
+if [ "$CONTAINER" = gba-dev-gba-mssql-1 ]; then
+    SIMPLE_RECOVERY_DEFAULT=ConcordDb_Data
+fi
+SIMPLE_RECOVERY_DATABASES=${GBA_SQL_SIMPLE_RECOVERY_DATABASES-$SIMPLE_RECOVERY_DEFAULT}
+if [ -n "$SIMPLE_RECOVERY_DATABASES" ]; then
+    docker exec -i -e SQLCMDPASSWORD="$PASSWORD" "$CONTAINER" "$SQLCMD" \
+        -S localhost -U sa -C -I -d master -b -r1 -W \
+        -v SimpleRecoveryDatabases="$SIMPLE_RECOVERY_DATABASES" \
+           SimpleRecoveryLogMB="${GBA_SQL_SIMPLE_RECOVERY_LOG_MB:-512}" \
+        -i /dev/stdin < "$ROOT/sql/simple-recovery.sql"
+fi
