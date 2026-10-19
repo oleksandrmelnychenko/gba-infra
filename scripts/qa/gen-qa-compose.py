@@ -79,9 +79,9 @@ def main() -> None:
         for secret in source.get('secrets', []):
             target = secret['target']
             name = secret['source']
-            if 'onec' in target.lower() or 'onec' in name.lower():
-                continue
             dev_file = Path(dev_secrets[name]['file'])
+            if ('onec' in target.lower() or 'onec' in name.lower()) and 'readonly' not in dev_file.name.lower():
+                continue
             if target in LOCAL_CONNECTION_TARGETS:
                 qa_file = SECRETS_DIR / name
                 qa_file.write_text(rewrite_connection_string(dev_file.read_text()))
@@ -98,7 +98,9 @@ def main() -> None:
                 folder = STATE_DIR / 'concord' / Path(target).name
                 folder.mkdir(parents=True, exist_ok=True)
                 volumes.append({'type': 'bind', 'source': str(folder), 'target': target})
-            elif volume.get('type') == 'bind' and volume.get('read_only') and target.startswith('/run/gba/'):
+            elif volume.get('type') == 'bind' and volume.get('read_only') and (
+                    target.startswith('/run/gba/')
+                    or (target.startswith('/run/secrets/') and 'readonly' in Path(volume['source']).name.lower())):
                 volumes.append({'type': 'bind', 'source': volume['source'], 'target': target, 'read_only': True})
 
         service = {
