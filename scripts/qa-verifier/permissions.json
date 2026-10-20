@@ -1,0 +1,3478 @@
+{
+  "role": {
+    "name": "QA Verifier",
+    "dashboard": "/dashboard",
+    "userRoleType": 13
+  },
+  "catalogVersion": "2026.08.28.69",
+  "reviewedAt": "2026-10-20",
+  "grant": [
+    {
+      "key": "sales.ukraine.sale.view",
+      "name": "Переглядати продажі України",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.ukraine.sale.open_details",
+      "name": "Відкрити продаж із таблиці",
+      "controlType": "tableRow",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.ukraine.sale.open_delivery_details",
+      "name": "Переглянути дані доставки",
+      "controlType": "menuItem",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.ukraine.sale.print_consignment_note",
+      "name": "Друкувати ТТН",
+      "controlType": "print",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "sales.ukraine.sale.view_audit",
+      "name": "Переглядати історію змін продажу",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "dashboard.overview.page.view",
+      "name": "Відкривати сторінку «Дашборд»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "administration.sync_documents.page.view",
+      "name": "Відкривати сторінку «Документи після синхронізації»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "administration.online_shop_cities.page.view",
+      "name": "Відкривати сторінку «Міста»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "administration.online_shop_seo.page.view",
+      "name": "Відкривати сторінку «Адміністрування»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "administration.users.page.view",
+      "name": "Відкривати сторінку «Всі користувачі»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "administration.roles.page.view",
+      "name": "Відкривати сторінку «Ролі»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "administration.vehicle_registry.page.view",
+      "name": "Відкривати сторінку «Реєстр автомобілів»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.budget_cart.page.view",
+      "name": "Відкривати сторінку «Бюджетний кошик»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.purchase_cockpit.page.view",
+      "name": "Відкривати сторінку «Панель закупівель»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.supply_dashboard.page.view",
+      "name": "Відкривати сторінку «Дашборд постачання»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.ukraine_orders.page.view",
+      "name": "Відкривати сторінку «Замовлення на Україну»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.product_delivery_protocols.page.view",
+      "name": "Відкривати сторінку «Протоколи доставки товарів»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.reconciliation_acts.page.view",
+      "name": "Відкривати сторінку «Акти звірки»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.supply_cart.page.view",
+      "name": "Відкривати сторінку «Кошик постачання»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.supply_sales.page.view",
+      "name": "Відкривати сторінку «Продажі для закупівель»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "reports.sale_file.page.view",
+      "name": "Відкривати сторінку «Перегляд звіту з файла»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "reports.stocks_constructor.page.view",
+      "name": "Відкривати сторінку «Конструктор»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.company_resources.page.view",
+      "name": "Відкривати сторінку «Ресурси компанії»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.clients.page.view",
+      "name": "Відкривати сторінку «Всі клієнти»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.online_shop_clients.page.view",
+      "name": "Відкривати сторінку «Клієнти Інтернет Магазину»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.new_ecommerce_clients.page.view",
+      "name": "Відкривати сторінку «Нові клієнти»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.buyer_organizations.page.view",
+      "name": "Відкривати сторінку «Організації Покупці»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.suppliers.page.view",
+      "name": "Відкривати сторінку «Всі виробники»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "accounting.advanced_reports.page.view",
+      "name": "Відкривати сторінку «Авансові звіти»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "accounting.income_cashflows.page.view",
+      "name": "Відкривати сторінку «Прибуткові статті»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "accounting.outgoing_cashflows.page.view",
+      "name": "Відкривати сторінку «Видаткові статті»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "accounting.cashflow_articles.page.view",
+      "name": "Відкривати сторінку «Статті витрат і руху коштів»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "accounting.expense_articles.page.view",
+      "name": "Відкривати сторінку «Статті витрат»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "payments.advance_payments.page.view",
+      "name": "Відкривати сторінку «Зарахування авансу»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "payments.available_payments.page.view",
+      "name": "Відкривати сторінку «Платежі»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "payments.banks.page.view",
+      "name": "Відкривати сторінку «Банки»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "payments.currency_convertors.page.view",
+      "name": "Відкривати сторінку «Валютні трейдери»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "payments.payment_accounts.page.view",
+      "name": "Відкривати сторінку «Рахунки»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "payments.online_shop_payment.page.view",
+      "name": "Відкривати сторінку «Оплата магазину»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "services.consumable_orders.page.view",
+      "name": "Відкривати сторінку «Прихідні накладні»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "services.consumable_products.page.view",
+      "name": "Відкривати сторінку «Побутові товари та послуги»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "services.accountable_expenses.page.view",
+      "name": "Відкривати сторінку «Підзвітні витрати»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "services.supplier_organizations.page.view",
+      "name": "Відкривати сторінку «Постачальники послуг»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "services.providing_service_acts.page.view",
+      "name": "Відкривати сторінку «Акт надання послуг»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "services.transporters.page.view",
+      "name": "Відкривати сторінку «Перевізники»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "services.organisations.page.view",
+      "name": "Відкривати сторінку «Організації послуг»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.incomplete_online_shop_sales.page.view",
+      "name": "Відкривати сторінку «Незавершені продажі»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.cockpit.page.view",
+      "name": "Відкривати сторінку «Кокпіт продажів»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.head_dashboard.page.view",
+      "name": "Відкривати сторінку «Дашборд відділу»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.geography.page.view",
+      "name": "Відкривати сторінку «Карта продажів»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.online_shop_sales.page.view",
+      "name": "Відкривати сторінку «Продажі Інтернет Магазину»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouses.company_cars.page.view",
+      "name": "Відкривати сторінку «Автомобілі компанії»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouses.premises.page.view",
+      "name": "Відкривати сторінку «Складові приміщення»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouses.ukraine.page.view",
+      "name": "Відкривати сторінку «Україна»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.write_off.page.view",
+      "name": "Відкривати сторінку «Списання»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.capitalization.page.view",
+      "name": "Відкривати сторінку «Оприходування»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.income_documents.page.view",
+      "name": "Відкривати сторінку «Прихідні накладні на товар»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.storages.page.view",
+      "name": "Відкривати сторінку «Склади»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.consignment_balances.page.view",
+      "name": "Відкривати сторінку «Залишки по партіям»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.transfers.page.view",
+      "name": "Відкривати сторінку «Переміщення»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.supplier_returns.page.view",
+      "name": "Відкривати сторінку «Повернення постачальнику»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.sad.page.view",
+      "name": "Відкривати сторінку «SAD»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_carriers.page.view",
+      "name": "Відкривати сторінку «Перевізники Tax Free»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_documents.page.view",
+      "name": "Відкривати сторінку «Документи Tax Free»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_pack_lists.page.view",
+      "name": "Відкривати сторінку «Паклисти Tax Free»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.specification_codes.page.view",
+      "name": "Відкривати сторінку «Митні коди»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.pricing.page.view",
+      "name": "Відкривати сторінку «Цінова оптимізація»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.groups.page.view",
+      "name": "Відкривати сторінку «Товарні групи»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.assortment.page.view",
+      "name": "Відкривати сторінку «Весь асортимент»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.assortment_analytics.page.view",
+      "name": "Відкривати сторінку «Аналітика асортименту»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.availability.page.view",
+      "name": "Відкривати сторінку «Наявність»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.history.page.view",
+      "name": "Відкривати сторінку «Історія товарів»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.placements.page.view",
+      "name": "Відкривати сторінку «Розміщення товарів»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.ukraine_offers.page.view",
+      "name": "Відкривати сторінку «Оферти»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.ukraine_cart_reserve.page.view",
+      "name": "Відкривати сторінку «Резерв кошика»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.ukraine_debtors.page.view",
+      "name": "Відкривати сторінку «Боржники»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.ukraine_interest.page.view",
+      "name": "Відкривати сторінку «Зацікавленість»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.ukraine_returns.page.view",
+      "name": "Відкривати сторінку «Повернення»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.ukraine_client_product_movement.page.view",
+      "name": "Відкривати сторінку «Рух товару клієнта»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.ukraine_prediction.page.view",
+      "name": "Відкривати сторінку «Прогноз»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.charts.page.view",
+      "name": "Відкривати сторінку «Графіки»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.resales.page.view",
+      "name": "Відкривати сторінку «Resale»",
+      "controlType": "page",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "administration.vehicle_registry.vehicle.open_details",
+      "name": "Відкривати картку автомобіля",
+      "controlType": "tableRow",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "administration.vehicle_registry.import.view_issues",
+      "name": "Переглядати помилки імпорту",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.online_shop_clients.cart.open",
+      "name": "Переглянути кошик клієнта",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.online_shop_clients.sales.open",
+      "name": "Переглянути продажі клієнта",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.supplier_returns.return.open_details",
+      "name": "Відкрити деталі повернення",
+      "controlType": "tableRow",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.supplier_returns.document.export",
+      "name": "Експортувати документ повернення",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "counterparties.suppliers.passport.open",
+      "name": "Відкрити паспорт постачальника",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.suppliers.document.export",
+      "name": "Експортувати перелік постачальників",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "counterparties.buyer_organizations.client.open_details",
+      "name": "Відкрити картку організації покупця",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.groups.group.open_details",
+      "name": "Відкрити товарну групу",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.reconciliation_acts.act.open_details",
+      "name": "Відкрити акт звірки",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.reconciliation_acts.history.view",
+      "name": "Переглядати історію акта звірки",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.resales.availability.export",
+      "name": "Експортувати доступні товари",
+      "controlType": "businessAction",
+      "risk": "medium",
+      "reason": "businessAction-typed but only renders an availability workbook"
+    },
+    {
+      "key": "sales.resales.document.export",
+      "name": "Експортувати документи перепродажу",
+      "controlType": "businessAction",
+      "risk": "medium",
+      "reason": "businessAction-typed but only renders resale documents"
+    },
+    {
+      "key": "reports.stocks_constructor.report.generate",
+      "name": "Сформувати звіт залишків",
+      "controlType": "businessAction",
+      "risk": "medium",
+      "reason": "businessAction-typed but only builds report workbooks/previews"
+    },
+    {
+      "key": "reports.sale_file.document.export",
+      "name": "Експортувати файл звіту продажів",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "reports.sale_file.document.print",
+      "name": "Друкувати файл звіту продажів",
+      "controlType": "print",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouse_accounting.write_off.order.open_details",
+      "name": "Відкривати деталі акта списання",
+      "controlType": "openDetails",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.write_off.document.export",
+      "name": "Експортувати акт списання",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "orders.ukraine.order.download_documents",
+      "name": "Завантажити документи замовлення",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "orders.ukraine.order.open_product_income",
+      "name": "Відкрити прихід товару",
+      "controlType": "modal",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.ukraine.order.open_products",
+      "name": "Відкрити товари замовлення",
+      "controlType": "modal",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.ukraine.order.open_specification_codes",
+      "name": "Відкрити митні коди",
+      "controlType": "modal",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.ukraine.order.open_logistic_way",
+      "name": "Відкрити логістичний шлях",
+      "controlType": "modal",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.ukraine.order.open_placement",
+      "name": "Відкрити оприходування",
+      "controlType": "modal",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.ukraine.order.open_overview",
+      "name": "Відкрити огляд замовлення",
+      "controlType": "modal",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.ukraine.placement.open_product_placement",
+      "name": "Відкрити оприходування з огляду",
+      "controlType": "menuItem",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.ukraine.specification_codes.view_history",
+      "name": "Переглянути історію митного коду",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.ukraine.specification_codes.download_application_files",
+      "name": "Завантажити файли з програми",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "orders.ukraine.product_income.view_weight_history",
+      "name": "Переглянути історію ваги",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.clients.accounting_cash_flow.open",
+      "name": "Відкрити взаєморозрахунки",
+      "controlType": "tableRow",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.clients.details.open",
+      "name": "Відкрити огляд клієнта",
+      "controlType": "tableRow",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.clients.ecommerce.open",
+      "name": "Відкрити вкладку інтернет-магазину",
+      "controlType": "tab",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.clients.pricing.open",
+      "name": "Відкрити вкладку ціноутворення",
+      "controlType": "tab",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.clients.contract.export_document",
+      "name": "Друкувати документи договору",
+      "controlType": "print",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "counterparties.clients.document.export",
+      "name": "Експортувати клієнтів",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "counterparties.clients.structure.open",
+      "name": "Відкривати структуру клієнта",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.clients.identity_review.open",
+      "name": "Переглядати перевірку ідентичності",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "counterparties.clients.accounting_cash_flow.export",
+      "name": "Експортувати взаєморозрахунки",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "accounting.advanced_reports.report.open",
+      "name": "Відкрити авансовий звіт",
+      "controlType": "drawer",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "accounting.advanced_reports.document_structure.open",
+      "name": "Відкрити структуру документів",
+      "controlType": "drawer",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.availability.document.export",
+      "name": "Експортувати доступність партій",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouse_accounting.consignment_balances.document.export",
+      "name": "Експортувати залишки по партіях",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouses.company_cars.road_list.open",
+      "name": "Переглядати шляхові листи",
+      "controlType": "open",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "payments.available_payments.cash_flow.open",
+      "name": "Переглядати рух коштів",
+      "controlType": "open",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "accounting.income_cashflows.order.open_details",
+      "name": "Переглядати деталі прибуткового ордера",
+      "controlType": "open",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "administration.users.user.open_details",
+      "name": "Відкривати профіль користувача",
+      "controlType": "tableRow",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouses.ukraine.editing.open",
+      "name": "Відкривати протоколи редагування",
+      "controlType": "tab",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouses.ukraine.invoice_register.open",
+      "name": "Відкривати реєстр накладних",
+      "controlType": "tab",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouses.ukraine.verification.open",
+      "name": "Відкривати звірку",
+      "controlType": "tab",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouses.ukraine.invoice_register.export",
+      "name": "Експортувати реєстр накладних",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouses.ukraine.verification.export",
+      "name": "Експортувати звірку",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "orders.delivery_protocol.document.download",
+      "name": "Завантажити документ протоколу",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "orders.delivery_protocol.product_income.open",
+      "name": "Відкрити прихід товару",
+      "controlType": "modal",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.delivery_protocol.product_income.download_document",
+      "name": "Завантажити документ PZ",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "orders.delivery_protocol.specification_codes.open",
+      "name": "Відкрити митні коди",
+      "controlType": "modal",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.delivery_protocol.logistic_way.open",
+      "name": "Відкрити логістичний шлях",
+      "controlType": "modal",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.delivery_protocol.documents.download",
+      "name": "Завантажити документи",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "orders.delivery_protocol.specification_history.open",
+      "name": "Переглянути історію митного коду",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.assortment.audit.open",
+      "name": "Відкрити історію змін товару",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.assortment.movement.export",
+      "name": "Експортувати рух товару",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "products.assortment.storage_history.open",
+      "name": "Відкрити історію місць зберігання",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.history.document.export",
+      "name": "Експортувати історію товарів",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "products.placements.document.export",
+      "name": "Експортувати розміщення товарів",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouse_accounting.capitalization.capitalization.open_details",
+      "name": "Відкрити деталі оприбуткування",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.capitalization.document.export",
+      "name": "Експортувати документ оприбуткування",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouse_accounting.income_documents.document.open_details",
+      "name": "Відкрити деталі прихідної накладної",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.income_documents.document.open_remainings",
+      "name": "Відкрити залишки прихідної накладної",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.income_documents.document.export",
+      "name": "Експортувати прихідну накладну",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouse_accounting.transfers.transfer.open_details",
+      "name": "Відкрити деталі переміщення",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.transfers.document.export",
+      "name": "Експортувати переміщення",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouse_accounting.storages.document.export",
+      "name": "Експортувати залишки складу",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_carriers.document.export",
+      "name": "Експортувати перевізників",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_documents.document.open_details",
+      "name": "Відкрити документ Tax Free",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_documents.document.print",
+      "name": "Друкувати Tax Free",
+      "controlType": "print",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_documents.document.export",
+      "name": "Експортувати Tax Free",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_pack_lists.pack_list.open_details",
+      "name": "Відкрити пакувальний лист",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_pack_lists.document.export",
+      "name": "Експортувати документи",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "warehouse_accounting.sad.sad.open_details",
+      "name": "Відкрити SAD",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.sad.document.export",
+      "name": "Експортувати документи",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "services.supplier_organizations.document.export",
+      "name": "Експортувати постачальників послуг",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "businessAction-typed but only renders the supplier list"
+    },
+    {
+      "key": "services.supplier_organizations.settlements.export",
+      "name": "Експортувати взаєморозрахунки",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "businessAction-typed but only renders settlements"
+    },
+    {
+      "key": "orders.supply_sales.sale.open",
+      "name": "Відкривати фактуру для закупівлі",
+      "controlType": "tableRow",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "orders.purchase_cockpit.document.export",
+      "name": "Експортувати план закупівлі",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "sales.ukraine.sale.export_invoice",
+      "name": "Сформувати видаткову накладну продажу",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "sales.ukraine.sale.export_shipment_list",
+      "name": "Сформувати лист на пакування продажу",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "sales.ukraine.sale.export_pz",
+      "name": "Сформувати документ PZ продажу",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "sales.ukraine.sale.export_revision_documents",
+      "name": "Сформувати документи правки продажу",
+      "controlType": "export",
+      "risk": "medium",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "sales.ukraine.sale.export_before_packing",
+      "name": "Формувати документи продажу до прийняття на пакування",
+      "controlType": "export",
+      "risk": "high",
+      "reason": "read-only document output"
+    },
+    {
+      "key": "services.supplier_organizations.settlements.open",
+      "name": "Відкрити взаєморозрахунки",
+      "controlType": "tableRow",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "services.supplier_organizations.overview.open",
+      "name": "Відкрити огляд постачальника",
+      "controlType": "tableRow",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "services.providing_service_acts.logistic_way.open",
+      "name": "Відкрити логістичний шлях",
+      "controlType": "modal",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "services.providing_service_acts.overview.open",
+      "name": "Відкрити огляд акта",
+      "controlType": "modal",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "administration.online_shop_seo.resale.open",
+      "name": "Відкрити Resale",
+      "controlType": "navigation",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.assortment.consignment_balances.open",
+      "name": "Відкрити залишки по партіях",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.assortment.movement.open",
+      "name": "Відкрити рух товару",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "products.assortment.write_off_rules.open",
+      "name": "Відкрити правила списання",
+      "controlType": "modal",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouse_accounting.storages.preview.open",
+      "name": "Відкрити попередній перегляд складу",
+      "controlType": "rightView",
+      "risk": "low",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouses.ukraine.invoices.open",
+      "name": "Відкрити накладні",
+      "controlType": "tab",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouses.ukraine.shipments.open",
+      "name": "Відкрити відвантаження",
+      "controlType": "tab",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "warehouses.ukraine.orders.open",
+      "name": "Відкрити замовлення на Україну",
+      "controlType": "tab",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "sales.online_shop_sales.order.read_all",
+      "name": "Переглядати всі замовлення інтернет-магазину",
+      "controlType": "rightView",
+      "risk": "medium",
+      "reason": "view/open control"
+    },
+    {
+      "key": "integration.gba_data.dataset.read",
+      "name": "Читати набір даних GBA для інтеграції",
+      "controlType": "export",
+      "risk": "high",
+      "reason": "read-only document output"
+    }
+  ],
+  "withhold": [
+    {
+      "key": "sales.ukraine.sale.create",
+      "name": "Створити продаж",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.sale.edit",
+      "name": "Редагувати продаж",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.sale.delete",
+      "name": "Видалити продаж",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.sale.unlock",
+      "name": "Розблокувати продаж",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.sale.unlock_for_shipping",
+      "name": "Дозволити відвантаження продажу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.vehicle_registry.workflow.update",
+      "name": "Змінювати обробку автомобіля",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.vehicle_registry.import.create",
+      "name": "Імпортувати реєстр автомобілів",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_seo.seo_page.edit",
+      "name": "Редагувати SEO сторінки",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_seo.general_info.edit",
+      "name": "Редагувати загальну інформацію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_seo.payment_info.edit",
+      "name": "Редагувати інформацію про оплату",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_seo.contact.create",
+      "name": "Додати контакт",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_seo.contact.edit",
+      "name": "Редагувати контакт",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_seo.contact.delete",
+      "name": "Видалити контакт",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_seo.client.toggle",
+      "name": "Змінювати участь клієнта в інтернет-магазині",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_seo.payment_register.select",
+      "name": "Обирати платіжний реєстр",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_seo.storage.add",
+      "name": "Додати склад",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_seo.storage.remove",
+      "name": "Видалити склад",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_seo.storage.set_priority",
+      "name": "Змінити пріоритет складу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_cities.city.create",
+      "name": "Створити місто",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_cities.city.edit",
+      "name": "Редагувати місто",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_cities.city.archive",
+      "name": "Архівувати місто",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.incomplete_online_shop.sale.assign_to_self",
+      "name": "Закріпити продаж за собою",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.incomplete_online_shop.sale.mark_completed",
+      "name": "Позначити продаж виконаним",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "products.pricing.competitor_search.run",
+      "name": "Запустити пошук цін конкурентів",
+      "controlType": "businessAction",
+      "risk": "medium",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.providing_service_acts.act.edit",
+      "name": "Редагувати акт надання послуг",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.transporters.transporter.archive",
+      "name": "Архівувати перевізника",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.transporters.transporter.create",
+      "name": "Створити перевізника",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.transporters.transporter.edit",
+      "name": "Редагувати перевізника",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.buyer_organizations.client.create",
+      "name": "Створити організацію покупця",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "counterparties.buyer_organizations.client.edit",
+      "name": "Редагувати організацію покупця",
+      "controlType": "edit",
+      "risk": "high",
+      "reason": "mutation control (edit)"
+    },
+    {
+      "key": "counterparties.buyer_organizations.client.delete",
+      "name": "Видалити організацію покупця",
+      "controlType": "delete",
+      "risk": "high",
+      "reason": "mutation control (delete)"
+    },
+    {
+      "key": "products.groups.group.edit",
+      "name": "Редагувати товарну групу",
+      "controlType": "edit",
+      "risk": "high",
+      "reason": "mutation control (edit)"
+    },
+    {
+      "key": "orders.reconciliation_acts.action.create_product_income",
+      "name": "Створити оприходування з акта звірки",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "orders.reconciliation_acts.action.create_product_transfer",
+      "name": "Створити переміщення з акта звірки",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "orders.reconciliation_acts.action.create_write_off",
+      "name": "Створити списання з акта звірки",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "orders.reconciliation_acts.disposition.change",
+      "name": "Змінити рішення щодо позицій акта",
+      "controlType": "edit",
+      "risk": "high",
+      "reason": "mutation control (edit)"
+    },
+    {
+      "key": "payments.payment_accounts.transfer.create",
+      "name": "Створити переказ між рахунками",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "payments.payment_accounts.transfer.cancel",
+      "name": "Скасувати переказ між рахунками",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "payments.payment_accounts.exchange.create",
+      "name": "Створити обмін валют",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "payments.payment_accounts.exchange.cancel",
+      "name": "Скасувати обмін валют",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.consumable_orders.order.create",
+      "name": "Створити прибуткову накладну",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.consumable_orders.order.edit",
+      "name": "Редагувати прибуткову накладну",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.consumable_orders.order.pay",
+      "name": "Оплатити прибуткову накладну",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.resales.resale.create",
+      "name": "Створити перепродаж",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.resales.resale.edit",
+      "name": "Редагувати перепродаж",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.resales.resale.delete",
+      "name": "Видалити перепродаж",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.resales.resale.convert_to_invoice",
+      "name": "Перетворити перепродаж на інвойс",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.resales.resale.complete",
+      "name": "Завершити інвойс перепродажу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.resales.consignment_note.print",
+      "name": "Друкувати ТТН перепродажу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.write_off.order.create",
+      "name": "Створювати акт списання",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "warehouse_accounting.write_off.order.create_management",
+      "name": "Створити управлінське списання",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouses.premises.write_off.create",
+      "name": "Створити списання",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouses.premises.write_off.edit",
+      "name": "Редагувати списання",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouses.premises.write_off.delete",
+      "name": "Видалити списання",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.order.open_arrival",
+      "name": "Відкрити прихід на Україну",
+      "controlType": "menuItem",
+      "risk": "medium",
+      "reason": "view-typed, but also gates POST supplies/orders/ukraine add-or-update from file"
+    },
+    {
+      "key": "orders.ukraine.order.open_order",
+      "name": "Відкрити замовлення на Україну",
+      "controlType": "menuItem",
+      "risk": "low",
+      "reason": "view-typed, but also gates POST supplies/orders/new/file and supplies/orders/ukraine/new/file"
+    },
+    {
+      "key": "orders.ukraine.order.delete",
+      "name": "Видалити замовлення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.order.create_payment_task",
+      "name": "Створити платіжну задачу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.order.add_delivery_costs",
+      "name": "Додати офіційні витрати доставки",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.order.completed_service_mutation",
+      "name": "Редагувати сервіси завершеного замовлення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.placement.save",
+      "name": "Зберегти оприходування",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.placement.post",
+      "name": "Провести оприходування",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.placement.capitalize",
+      "name": "Оприходувати товар",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.placement.create_reconciliation",
+      "name": "Створити акт звірки",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.placement.calculate",
+      "name": "Розрахувати огляд",
+      "controlType": "businessAction",
+      "risk": "medium",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.placement.upload_documents",
+      "name": "Завантажити документи приходу",
+      "controlType": "upload",
+      "risk": "medium",
+      "reason": "mutation control (upload)"
+    },
+    {
+      "key": "orders.ukraine.specification_codes.edit",
+      "name": "Змінити митні коди",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.specification_codes.download_customs_documents",
+      "name": "Завантажити митні документи",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "download-typed, but also gates POST supplies/invoices/*/documents/add"
+    },
+    {
+      "key": "orders.ukraine.specification_codes.download_codes",
+      "name": "Завантажити митні коди",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "download-typed, but also gates POST supplies/invoices/direct-supply-order/specification/upload"
+    },
+    {
+      "key": "orders.ukraine.invoice.upload",
+      "name": "Завантажити інвойс",
+      "controlType": "upload",
+      "risk": "high",
+      "reason": "mutation control (upload)"
+    },
+    {
+      "key": "orders.ukraine.invoice.delete",
+      "name": "Видалити інвойс",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.pack_list.delete",
+      "name": "Видалити паклист",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.pack_list.upload",
+      "name": "Завантажити паклист",
+      "controlType": "upload",
+      "risk": "high",
+      "reason": "mutation control (upload)"
+    },
+    {
+      "key": "orders.ukraine.product_income.add",
+      "name": "Додати прихід товару",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.product_income.delete",
+      "name": "Видалити прихід товару",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.product_income.capitalize",
+      "name": "Оприходувати прихід товару",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.product_income.post",
+      "name": "Провести прихід товару",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.logistic_way.create_credit_note",
+      "name": "Створити кредит-ноту",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.logistic_way.approve_order",
+      "name": "Затвердити замовлення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.logistic_way.edit_order_quantity",
+      "name": "Редагувати кількість замовлення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.logistic_way.upload_delivery_document",
+      "name": "Керувати файлом документа доставки",
+      "controlType": "upload",
+      "risk": "high",
+      "reason": "mutation control (upload)"
+    },
+    {
+      "key": "orders.ukraine.logistic_way.change_delivery_document_status",
+      "name": "Змінити статус документа доставки",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.logistic_way.create_proforma",
+      "name": "Створити проформу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.logistic_way.create_payment_task",
+      "name": "Створити платіжну задачу проформи",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.logistic_way.delete_payment_task",
+      "name": "Видалити платіжну задачу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.logistic_way.add_invoice",
+      "name": "Додати інвойс",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.ukraine.logistic_way.edit_invoice",
+      "name": "Редагувати інвойс",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.country.create",
+      "name": "Додати країну",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.incoterm.create",
+      "name": "Додати Incoterm",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.region.create",
+      "name": "Додати регіон",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.region_code.create",
+      "name": "Додати код регіону",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.region.edit",
+      "name": "Редагувати регіон",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.region.delete",
+      "name": "Видалити регіон",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.perfect_client.create",
+      "name": "Додати ідеального клієнта",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.perfect_client.edit",
+      "name": "Редагувати ідеального клієнта",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.perfect_client.delete",
+      "name": "Видалити ідеального клієнта",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.organization.create",
+      "name": "Додати організацію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.organization.edit",
+      "name": "Редагувати організацію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.organization.delete",
+      "name": "Видалити організацію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.tax_inspection.create",
+      "name": "Додати податкову інспекцію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.tax_inspection.edit",
+      "name": "Редагувати податкову інспекцію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.tax_inspection.delete",
+      "name": "Видалити податкову інспекцію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.pricing_rule.create",
+      "name": "Додати правило ціноутворення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.pricing_rule.set_priority",
+      "name": "Змінити пріоритет ціноутворення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.pricing_rule.edit",
+      "name": "Редагувати правило ціноутворення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.pricing_rule.delete",
+      "name": "Видалити правило ціноутворення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.currency.create",
+      "name": "Додати валюту",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.currency.edit",
+      "name": "Редагувати валюту",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.currency.delete",
+      "name": "Видалити валюту",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.storage.create",
+      "name": "Додати склад",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.storage.edit",
+      "name": "Редагувати склад",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.storage.delete",
+      "name": "Видалити склад",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.measure_unit.create",
+      "name": "Додати одиницю виміру",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.measure_unit.edit",
+      "name": "Редагувати одиницю виміру",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.measure_unit.delete",
+      "name": "Видалити одиницю виміру",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.vat_rate.create",
+      "name": "Додати ставку ПДВ",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.transporter.create",
+      "name": "Додати перевізника",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.transporter.edit",
+      "name": "Редагувати перевізника",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.resources.transporter.delete",
+      "name": "Архівувати перевізника",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.client.create",
+      "name": "Додати клієнта",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.client_type.select_supplier",
+      "name": "Вибрати тип «Постачальник»",
+      "controlType": "control",
+      "risk": "medium",
+      "reason": "mutation control (control)"
+    },
+    {
+      "key": "counterparties.clients.client_type.select_product_supplier",
+      "name": "Вибрати постачальника товару",
+      "controlType": "control",
+      "risk": "medium",
+      "reason": "mutation control (control)"
+    },
+    {
+      "key": "counterparties.clients.client_type.select_buyer",
+      "name": "Вибрати тип «Покупець»",
+      "controlType": "control",
+      "risk": "medium",
+      "reason": "mutation control (control)"
+    },
+    {
+      "key": "counterparties.clients.client_type.select_ukraine_buyer",
+      "name": "Вибрати покупця України",
+      "controlType": "control",
+      "risk": "medium",
+      "reason": "mutation control (control)"
+    },
+    {
+      "key": "counterparties.clients.client_type.select_polish_client",
+      "name": "Вибрати польського клієнта",
+      "controlType": "control",
+      "risk": "medium",
+      "reason": "mutation control (control)"
+    },
+    {
+      "key": "counterparties.clients.client_type.select_polish_ua_buyer",
+      "name": "Вибрати покупця ПЛ Україна",
+      "controlType": "control",
+      "risk": "medium",
+      "reason": "mutation control (control)"
+    },
+    {
+      "key": "counterparties.clients.client_type.select_polish_buyer",
+      "name": "Вибрати покупця ПЛ",
+      "controlType": "control",
+      "risk": "medium",
+      "reason": "mutation control (control)"
+    },
+    {
+      "key": "counterparties.clients.client_type.select_shop_client",
+      "name": "Вибрати клієнта магазину",
+      "controlType": "control",
+      "risk": "medium",
+      "reason": "mutation control (control)"
+    },
+    {
+      "key": "counterparties.clients.status.toggle_active",
+      "name": "Змінити активність клієнта",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.client.delete",
+      "name": "Видалити клієнта",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.client_type.change",
+      "name": "Змінити тип клієнта",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.contract.edit",
+      "name": "Редагувати договір",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.contract.accounting_settings.edit",
+      "name": "Редагувати облікові параметри договору",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.contract.pricing_scope.override",
+      "name": "Обирати ціни поза обліковим режимом договору",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.contract.select_all",
+      "name": "Вибрати всі умови договору",
+      "controlType": "control",
+      "risk": "medium",
+      "reason": "mutation control (control)"
+    },
+    {
+      "key": "counterparties.clients.promotion.edit_text",
+      "name": "Редагувати акцію клієнта",
+      "controlType": "input",
+      "risk": "high",
+      "reason": "mutation control (input)"
+    },
+    {
+      "key": "counterparties.clients.promotion.toggle",
+      "name": "Вибрати акцію клієнта",
+      "controlType": "control",
+      "risk": "high",
+      "reason": "mutation control (control)"
+    },
+    {
+      "key": "counterparties.clients.client.edit",
+      "name": "Редагувати картку клієнта",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.ecommerce.change_password",
+      "name": "Змінювати пароль e-commerce",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.reservation_days.edit",
+      "name": "Редагувати дні резерву",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.structure.manage_groups",
+      "name": "Керувати групами структури",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.structure.manage_workplaces",
+      "name": "Керувати робочими місцями",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.structure.delete_workplace",
+      "name": "Видаляти робочі місця",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.structure.create_delivery_recipient",
+      "name": "Створювати отримувачів доставки",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.structure.delete_delivery_recipient",
+      "name": "Видаляти отримувачів доставки",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.recommendations.exclude_product",
+      "name": "Виключати товар із рекомендацій",
+      "controlType": "businessAction",
+      "risk": "medium",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "counterparties.clients.identity_review.manage",
+      "name": "Керувати зв’язками клієнтів",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "accounting.advanced_reports.report.edit",
+      "name": "Редагувати авансовий звіт",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "accounting.outgoing_cashflows.order.create",
+      "name": "Створити видатковий ордер",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "accounting.outgoing_cashflows.order.cancel",
+      "name": "Скасувати видатковий ордер",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "payments.online_shop_payment.payment.create",
+      "name": "Створювати підтвердження оплати магазину",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "payments.online_shop_payment.payment.edit",
+      "name": "Редагувати підтвердження оплати магазину",
+      "controlType": "edit",
+      "risk": "high",
+      "reason": "mutation control (edit)"
+    },
+    {
+      "key": "warehouses.company_cars.car.edit",
+      "name": "Редагувати автомобіль компанії",
+      "controlType": "edit",
+      "risk": "high",
+      "reason": "mutation control (edit)"
+    },
+    {
+      "key": "warehouses.company_cars.car.delete",
+      "name": "Видаляти автомобіль компанії",
+      "controlType": "delete",
+      "risk": "high",
+      "reason": "mutation control (delete)"
+    },
+    {
+      "key": "warehouses.company_cars.road_list.create",
+      "name": "Створювати шляхові листи",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "warehouses.company_cars.road_list.edit",
+      "name": "Редагувати шляхові листи",
+      "controlType": "edit",
+      "risk": "high",
+      "reason": "mutation control (edit)"
+    },
+    {
+      "key": "warehouses.company_cars.road_list.delete",
+      "name": "Видаляти шляхові листи",
+      "controlType": "delete",
+      "risk": "high",
+      "reason": "mutation control (delete)"
+    },
+    {
+      "key": "payments.available_payments.outcome_order.create",
+      "name": "Створювати видатковий ордер",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "payments.available_payments.task.merge",
+      "name": "Об'єднувати платіжні задачі",
+      "controlType": "merge",
+      "risk": "high",
+      "reason": "mutation control (merge)"
+    },
+    {
+      "key": "payments.available_payments.task.mark_available",
+      "name": "Позначати задачу доступною до оплати",
+      "controlType": "status",
+      "risk": "high",
+      "reason": "mutation control (status)"
+    },
+    {
+      "key": "accounting.income_cashflows.client_payment.create",
+      "name": "Створювати оплату покупця",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "accounting.income_cashflows.supplier_return.create",
+      "name": "Створювати повернення від постачальника",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "accounting.income_cashflows.counterparty_income.create",
+      "name": "Створювати інше надходження з контрагентом",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "accounting.income_cashflows.other_income.create",
+      "name": "Створювати інше надходження",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "accounting.income_cashflows.colleague_return.create",
+      "name": "Створювати повернення від колеги",
+      "controlType": "create",
+      "risk": "high",
+      "reason": "mutation control (create)"
+    },
+    {
+      "key": "accounting.income_cashflows.order.reassign_client",
+      "name": "Переназначати клієнта прибуткового ордера",
+      "controlType": "edit",
+      "risk": "high",
+      "reason": "mutation control (edit)"
+    },
+    {
+      "key": "accounting.income_cashflows.order.cancel",
+      "name": "Скасовувати прибутковий ордер",
+      "controlType": "cancel",
+      "risk": "high",
+      "reason": "mutation control (cancel)"
+    },
+    {
+      "key": "administration.users.user.create",
+      "name": "Створювати користувача",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.users.user.edit",
+      "name": "Редагувати користувача",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.users.user.delete",
+      "name": "Видаляти користувача",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.users.user.password_reset",
+      "name": "Змінювати пароль користувача",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.roles.role.create",
+      "name": "Створювати роль",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.roles.role.edit",
+      "name": "Редагувати роль",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.roles.role.delete",
+      "name": "Видаляти роль",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.roles.page_permissions.edit",
+      "name": "Змінювати права сторінок ролі",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.roles.permission_definition.create",
+      "name": "Створювати опис права",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.roles.permission_definition.edit",
+      "name": "Редагувати опис права",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.roles.event_permissions.edit",
+      "name": "Змінювати подієві права ролі",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouses.ukraine.shipment.create",
+      "name": "Створювати відвантаження",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouses.ukraine.shipment.edit",
+      "name": "Редагувати відвантаження",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouses.ukraine.shipment.carry_out",
+      "name": "Проводити відвантаження",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouses.ukraine.shipment.print",
+      "name": "Друкувати відвантаження",
+      "controlType": "print",
+      "risk": "medium",
+      "reason": "print-typed, but GET sales/shipments/document/create/export creates a ShipmentList (mutation ledger)"
+    },
+    {
+      "key": "warehouses.ukraine.invoice.print",
+      "name": "Друкувати накладну",
+      "controlType": "print",
+      "risk": "medium",
+      "reason": "print-typed, but also gates POST sales/warehouse-ukraine/invoices/mark-printed"
+    },
+    {
+      "key": "warehouses.ukraine.invoice.print_edit_act",
+      "name": "Друкувати акт редагування",
+      "controlType": "print",
+      "risk": "medium",
+      "reason": "print-typed, but also gates POST sales/warehouse-ukraine/invoices/mark-edit-act-printed"
+    },
+    {
+      "key": "warehouses.ukraine.editing.process",
+      "name": "Опрацьовувати протокол редагування",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.protocol.create",
+      "name": "Додати протокол доставки",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.product_income.edit_placement",
+      "name": "Редагувати розміщення приходу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.product_income.update_readiness",
+      "name": "Позначити товари готовими до розміщення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.product_income.capitalize",
+      "name": "Оприходувати товар",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.product_income.post",
+      "name": "Провести прихід товару",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.delivery_documents.download",
+      "name": "Завантажити документи доставки",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "download-typed, but also gates POST supplies/invoices/*/documents/add"
+    },
+    {
+      "key": "orders.delivery_protocol.specification_codes.download",
+      "name": "Завантажити митні коди",
+      "controlType": "download",
+      "risk": "medium",
+      "reason": "download-typed, but also gates POST supplies/invoices/product-delivery-protocol/specification/upload"
+    },
+    {
+      "key": "orders.delivery_protocol.invoice_management.open",
+      "name": "Відкрити управління інвойсами",
+      "controlType": "modal",
+      "risk": "medium",
+      "reason": "view-typed, but also gates POST delivery/product/protocol/add/supply/invoices"
+    },
+    {
+      "key": "orders.delivery_protocol.invoice.merge",
+      "name": "Об'єднати інвойси",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.completed_protocol.edit",
+      "name": "Редагувати завершений протокол доставки",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.unified_service.edit",
+      "name": "Редагувати об'єднаний сервіс",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.unified_service.change_status",
+      "name": "Змінити статус на «В дорозі»",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.unified_service.delete",
+      "name": "Видалити об'єднаний сервіс",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.unified_service.create",
+      "name": "Додати об'єднаний сервіс",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.unified_service.calculate",
+      "name": "Розрахувати об'єднаний сервіс",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.delivery_protocol.unified_service.add_invoice",
+      "name": "Додати інвойс об'єднаного сервісу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "products.assortment.placement.edit",
+      "name": "Редагувати місця зберігання",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "products.assortment.write_off_rules.create",
+      "name": "Додати правило списання",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "products.assortment.write_off_rules.delete",
+      "name": "Видалити правило списання",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "products.placements.file.import",
+      "name": "Імпортувати розміщення товарів",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.capitalization.capitalization.create",
+      "name": "Створити оприбуткування",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.transfers.transfer.create",
+      "name": "Створити переміщення товарів",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.transfers.transfer.create_management",
+      "name": "Створити управлінське переміщення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.storages.position_action.management",
+      "name": "Виконувати управлінські дії з позицією складу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_carriers.carrier.create",
+      "name": "Створити перевізника",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_carriers.carrier.edit",
+      "name": "Редагувати перевізника",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_carriers.carrier.delete",
+      "name": "Видалити перевізника",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_documents.document.edit",
+      "name": "Редагувати документ Tax Free",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_documents.status.change",
+      "name": "Змінити статус Tax Free",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_documents.accounting.create_income",
+      "name": "Створити прибутковий ордер із Tax Free",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_documents.accounting.create_outcome",
+      "name": "Створити видатковий ордер із Tax Free",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_pack_lists.pack_list.edit",
+      "name": "Редагувати пакувальний лист",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_pack_lists.pack_list.send",
+      "name": "Провести пакувальний лист",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_pack_lists.pack_list.break",
+      "name": "Розбити пакувальний лист",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_pack_lists.pack_list.delete",
+      "name": "Видалити пакувальний лист",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_pack_lists.document.upload",
+      "name": "Завантажити вкладення",
+      "controlType": "upload",
+      "risk": "high",
+      "reason": "mutation control (upload)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_pack_lists.document.delete",
+      "name": "Видалити вкладення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.tax_free_pack_lists.supply_order.create",
+      "name": "Створити замовлення з пакувального листа",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.sad.sad.edit",
+      "name": "Редагувати SAD",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.sad.sad.send",
+      "name": "Провести SAD",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.sad.sad.delete",
+      "name": "Видалити SAD",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.sad.pallet.edit",
+      "name": "Редагувати палети",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.sad.document.upload",
+      "name": "Завантажити вкладення",
+      "controlType": "upload",
+      "risk": "high",
+      "reason": "mutation control (upload)"
+    },
+    {
+      "key": "warehouse_accounting.sad.document.delete",
+      "name": "Видалити вкладення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.sad.specification.edit",
+      "name": "Редагувати специфікацію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.sad.specification.import",
+      "name": "Імпортувати специфікації",
+      "controlType": "upload",
+      "risk": "high",
+      "reason": "mutation control (upload)"
+    },
+    {
+      "key": "warehouse_accounting.sad.supply_order.create",
+      "name": "Створити замовлення постачання",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.sad.accounting.create_income",
+      "name": "Створити прибутковий ордер",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouse_accounting.sad.accounting.create_outcome",
+      "name": "Створити видатковий ордер",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.supplier_organizations.supplier.edit",
+      "name": "Редагувати постачальника послуг",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.supplier_organizations.agreement.create",
+      "name": "Додати договір постачальника",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.supplier_organizations.agreement.edit",
+      "name": "Редагувати договір постачальника",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "products.specification_codes.code.import",
+      "name": "Імпортувати митні коди",
+      "controlType": "upload",
+      "risk": "high",
+      "reason": "mutation control (upload)"
+    },
+    {
+      "key": "orders.supply_cart.file.import",
+      "name": "Імпортувати товари до кошика",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.supply_cart.item.edit_reservation",
+      "name": "Змінювати резерв товару",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.supply_cart.document.assemble",
+      "name": "Формувати митний документ із кошика",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.purchase_cockpit.producer_profile.edit",
+      "name": "Змінювати профіль виробника",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.purchase_cockpit.product_terms.edit",
+      "name": "Змінювати умови закупівлі товару",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.purchase_cockpit.feedback.submit",
+      "name": "Надсилати рішення за рекомендаціями",
+      "controlType": "businessAction",
+      "risk": "medium",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "orders.purchase_cockpit.draft_order.create",
+      "name": "Створювати чернетку замовлення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.cockpit.task.take_in_progress",
+      "name": "Взяти задачу продажів у роботу",
+      "controlType": "businessAction",
+      "risk": "medium",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.cockpit.task.complete",
+      "name": "Завершити задачу продажів",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.cockpit.task.snooze",
+      "name": "Відкласти задачу продажів",
+      "controlType": "businessAction",
+      "risk": "medium",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.cockpit.task.dismiss",
+      "name": "Позначити задачу продажів неактуальною",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.cockpit.task.add_note",
+      "name": "Додати нотатку до задачі продажів",
+      "controlType": "businessAction",
+      "risk": "medium",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.cockpit.task.generate",
+      "name": "Згенерувати задачі кокпіту продажів",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.head_dashboard.task.create",
+      "name": "Призначити задачу менеджеру",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.head_dashboard.task.add_note",
+      "name": "Додати коментар керівника",
+      "controlType": "businessAction",
+      "risk": "medium",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.head_dashboard.task.dismiss",
+      "name": "Скасувати задачу менеджера",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.head_dashboard.task.generate",
+      "name": "Перерахувати AI-задачі відділу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.offer.create",
+      "name": "Створити оферту клієнту",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.offer.edit",
+      "name": "Редагувати причини в оферті",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.offer.delete",
+      "name": "Видалити оферту",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.offer.extend_validity",
+      "name": "Продовжити термін дії оферти",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine_interest.preorder.create",
+      "name": "Створити зацікавленість у товарі",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.consignment_note_setting.save",
+      "name": "Зберегти налаштування ТТН",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.consignment_note_setting.delete",
+      "name": "Видалити налаштування ТТН",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.future_reservation.create",
+      "name": "Зарезервувати товар під майбутню поставку",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.sale.reassign",
+      "name": "Переназначити продаж іншому договору клієнта",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.sale.convert_merged_to_bill",
+      "name": "Перетворити об'єднаний продаж на рахунок",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.sale.export_payment_invoice",
+      "name": "Сформувати рахунок на оплату продажу",
+      "controlType": "export",
+      "risk": "high",
+      "reason": "export-typed, but printing the payment invoice runs the payment-document finalization mutation"
+    },
+    {
+      "key": "sales.ukraine.sale_return.create_any",
+      "name": "Створювати повернення для чужого продажу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.sale_return.cancel_any",
+      "name": "Скасовувати чуже повернення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "payments.banks.bank.create",
+      "name": "Додати банк",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "payments.banks.bank.save",
+      "name": "Зберегти банк",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "payments.banks.bank.delete",
+      "name": "Видалити банк",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouses.company_cars.car.create",
+      "name": "Додати автомобіль компанії",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.consumable_products.category.create",
+      "name": "Додати категорію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.consumable_products.category.edit",
+      "name": "Редагувати послугу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.consumable_products.category.delete",
+      "name": "Видалити послугу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.consumable_products.subcategory.create",
+      "name": "Додати підкатегорію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.consumable_products.subcategory.edit",
+      "name": "Редагувати підкатегорію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "payments.currency_convertors.converter.create",
+      "name": "Додати валютного трейдера",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "payments.currency_convertors.converter.edit",
+      "name": "Редагувати валютного трейдера",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "payments.payment_accounts.account.create",
+      "name": "Додати платіжний рахунок",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "payments.payment_accounts.account.edit",
+      "name": "Редагувати платіжний рахунок",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "accounting.cashflow_articles.article.create",
+      "name": "Додати статтю руху коштів",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "accounting.cashflow_articles.article.delete",
+      "name": "Видалити статтю руху коштів",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "accounting.cashflow_articles.article.save",
+      "name": "Зберегти статтю руху коштів",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "accounting.expense_articles.article.create",
+      "name": "Додати статтю витрат",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "accounting.expense_articles.article.save",
+      "name": "Зберегти статтю витрат",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "accounting.expense_articles.article.delete",
+      "name": "Видалити статтю витрат",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "products.specification_codes.code.edit",
+      "name": "Змінити митний код",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouses.premises.premise.create",
+      "name": "Додати складське приміщення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouses.premises.premise.edit",
+      "name": "Редагувати складське приміщення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "warehouses.premises.premise.delete",
+      "name": "Видалити складське приміщення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.supplier_organizations.supplier.create",
+      "name": "Додати постачальника послуг",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "services.supplier_organizations.supplier.delete",
+      "name": "Видалити постачальника послуг",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.online_shop_seo.synchronization.run",
+      "name": "Запустити синхронізацію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "products.groups.group.create",
+      "name": "Додати товарну групу",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "products.assortment.specification.edit",
+      "name": "Змінити специфікацію",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "products.assortment.image.upload",
+      "name": "Завантажити зображення",
+      "controlType": "upload",
+      "risk": "medium",
+      "reason": "mutation control (upload)"
+    },
+    {
+      "key": "products.assortment.image.delete",
+      "name": "Видалити зображення",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "products.assortment.product.edit",
+      "name": "Редагувати товар",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "products.assortment.document.upload",
+      "name": "Завантажити документ товару",
+      "controlType": "upload",
+      "risk": "medium",
+      "reason": "mutation control (upload)"
+    },
+    {
+      "key": "products.assortment.legacy_77.execute",
+      "name": "Виконати legacy-дію 77",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.sale.sell_without_payment",
+      "name": "Продавати без оплати",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "sales.ukraine.sale.edit_product_comment",
+      "name": "Редагувати коментар позиції",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.scheduler_tasks.sales.merge_all",
+      "name": "Об'єднувати всі продажі",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.scheduler_tasks.shopping_carts.clear_invalid",
+      "name": "Очищати недійсні кошики",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.scheduler_tasks.expired_bill_notifications.generate",
+      "name": "Формувати сповіщення про прострочені рахунки",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.scheduler_tasks.expired_bill_notifications.defer",
+      "name": "Відкладати сповіщення про прострочені рахунки",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.scheduler_tasks.product_prices.update",
+      "name": "Оновлювати ціни товарів",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.scheduler_tasks.product_availability_pl.update",
+      "name": "Оновлювати наявність товарів у Польщі",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    },
+    {
+      "key": "administration.scheduler_tasks.product_availability_ua.update",
+      "name": "Оновлювати наявність товарів в Україні",
+      "controlType": "businessAction",
+      "risk": "high",
+      "reason": "mutation control (businessAction)"
+    }
+  ]
+}
