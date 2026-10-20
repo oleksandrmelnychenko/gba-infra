@@ -1,0 +1,19 @@
+{
+  "name": "product-card-receipts-2018",
+  "description": "Product card F15513-WS: the «Прихід» view lists the whole receipt history, including the 2018 Fenix receipt",
+  "url": "/products?netId=47b16aa5-fc36-4b56-ae75-17b607f4afcf",
+  "env": "dev",
+  "steps": [
+    { "waitFor": { "text": "F15513-WS", "exact": true } },
+    { "click": { "role": "button", "name": "Прихід", "exact": true } },
+    { "waitForResponse": { "urlIncludes": "/consignments/info/assortment/income/filtered", "status": 200 } }
+  ],
+  "checks": [
+    { "type": "visible", "locator": { "css": "button.pill-tab[aria-pressed=\"true\"]", "hasText": "Прихід" }, "description": "«Прихід» view is active" },
+    { "type": "response", "urlIncludes": "/consignments/info/assortment/income/filtered", "status": 200, "description": "receipts API answered 200 for the verifier" },
+    { "type": "rowCount", "rowMatches": "\\d{2}\\.\\d{2}\\.2018", "min": 1, "description": "at least one receipt row dated 2018" },
+    { "type": "text", "text": "26.02.2018", "description": "the 26.02.2018 receipt is shown" },
+    { "type": "noFailedRequests", "description": "no 4xx/5xx API responses" },
+    { "type": "noConsoleErrors", "description": "no browser console errors" }
+  ]
+}

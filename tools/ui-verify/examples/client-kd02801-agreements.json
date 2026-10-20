@@ -1,0 +1,21 @@
+{
+  "name": "client-kd02801-agreements",
+  "description": "Read-only stand-in for wizard step 1: client KD02801 is found in the client registry and its structure card shows 2 agreements",
+  "url": "/clients",
+  "env": "dev",
+  "steps": [
+    { "fill": { "locator": { "placeholder": "Введіть значення" }, "value": "KD02801" } },
+    { "waitForResponse": { "urlIncludes": "value=KD02801", "status": 200 } },
+    { "click": { "css": "table tbody tr", "hasText": "Зубаренко" } },
+    { "click": { "text": "Структура клієнта", "exact": true } },
+    { "waitForResponse": { "urlIncludes": "/clients/structure/details", "status": 200 } }
+  ],
+  "checks": [
+    { "type": "text", "text": "KD02801", "description": "client code KD02801 is on screen" },
+    { "type": "text", "text": "Договори 1С · 2", "description": "the 1C source card lists 2 agreements" },
+    { "type": "text", "text": "2/2", "description": "agreement counter shows 2 active of 2" },
+    { "type": "noFailedRequests", "description": "no 4xx/5xx API responses" },
+    { "type": "noBlockedRequests", "description": "the page needed no blocked non-GET request" },
+    { "type": "noConsoleErrors", "description": "no browser console errors" }
+  ]
+}

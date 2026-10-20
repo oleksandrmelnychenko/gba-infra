@@ -1,0 +1,21 @@
+{
+  "name": "gba-ui-verify",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Read-only Playwright UI checks against the GBA DEV/QA console as the QA Verifier user",
+  "type": "module",
+  "bin": {
+    "ui-verify": "./ui-verify.mjs"
+  },
+  "scripts": {
+    "verify": "node ui-verify.mjs",
+    "install-browser": "playwright install chromium",
+    "install-browser-deps": "playwright install --with-deps chromium"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "playwright": "1.64.1"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "new-sale-wizard-gated",
+  "description": "Sales Ukraine: the «Новий продаж» wizard needs sales.ukraine.sale.create, which the read-only verifier does not hold, so the button is disabled and no wizard opens",
+  "url": "/sales/ukraine/all",
+  "env": "dev",
+  "steps": [
+    { "waitForResponse": { "urlIncludes": "/sales/ukraine/registry", "status": 200 } }
+  ],
+  "checks": [
+    { "type": "visible", "locator": { "role": "button", "name": "Новий продаж" }, "enabled": false, "description": "«Новий продаж» is shown but disabled" },
+    { "type": "absent", "locator": { "css": ".new-sale-wizard-frame" }, "description": "no wizard frame is open" },
+    { "type": "response", "urlIncludes": "/sales/ukraine/registry", "status": 200, "description": "sales registry loads for the verifier" },
+    { "type": "noFailedRequests", "description": "no 4xx/5xx API responses" },
+    { "type": "noConsoleErrors", "description": "no browser console errors" }
+  ]
+}
