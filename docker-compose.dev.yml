@@ -161,6 +161,9 @@ services:
         gba.git.sha: "${GBA_CONSOLE_GIT_SHA:-unknown}"
     environment:
       API_PROXY_TARGET: "http://data-concord:35981"
+      GBA_QA_ENABLED: "true"
+      API_QA_PROXY_TARGET: "http://data-concord-qa:35981"
+      API_QA_HISTORY_PROXY_TARGET: "http://data-analytics-qa:35982"
     ports:
       - "8083:80"
     restart: unless-stopped
