@@ -27,6 +27,11 @@ SERVICES = {
     'data-analytics': ('data-analytics-qa', '35997', 35982, '3g'),
 }
 DATA_BIND_TARGETS = {'/app/Data', '/app/Images', '/app/Logs'}
+HISTORY_READONLY_TARGETS = {
+    'ConnectionStrings:FenixOneCReadOnlyConnectionString',
+    'ConnectionStrings:AmgOneCReadOnlyConnectionString',
+}
+SOURCE_PACING_LOCK = '/private/bug1274-settlement-source-paced.lock'
 SOURCE_FLAG = re.compile(r'(?i)(sync|capture|refresh|replay|fenix|amg|onec|import|export)')
 FORCED_ENVIRONMENT = {
     'Maintenance__Enabled': 'false',
@@ -62,6 +67,13 @@ def qa_environment(environment: dict, service: str) -> dict:
     result.update(FORCED_ENVIRONMENT)
     if service == 'data-concord':
         result['BackgroundWriters__Enabled'] = 'true'
+        if str(result.get('ProductSourceHistory__Enabled', '')).lower() == 'true':
+            database = result.get('ProductSourceHistory__OwnExpectedDatabase')
+            if database not in DATABASE_RENAMES:
+                raise SystemExit('Product history requires a known DEV database before mapping its QA target')
+            result['ProductSourceHistory__OwnExpectedDatabase'] = DATABASE_RENAMES[database]
+    else:
+        result['ProductSourceHistory__Enabled'] = 'false'
     return result
 
 
@@ -75,12 +87,17 @@ def main() -> None:
     services = {}
     for dev_name, (qa_name, host_port, container_port, memory) in SERVICES.items():
         source = dev['services'][dev_name]
+        history_enabled = dev_name == 'data-concord' and str(
+            source.get('environment', {}).get('ProductSourceHistory__Enabled', '')).lower() == 'true'
         service_secrets = []
+        history_secrets = set()
         for secret in source.get('secrets', []):
             target = secret['target']
             name = secret['source']
             if 'onec' in target.lower() or 'onec' in name.lower():
-                continue
+                if not history_enabled or target not in HISTORY_READONLY_TARGETS:
+                    continue
+                history_secrets.add(target)
             dev_file = Path(dev_secrets[name]['file'])
             if target in LOCAL_CONNECTION_TARGETS:
                 qa_file = SECRETS_DIR / name
@@ -90,8 +107,11 @@ def main() -> None:
             else:
                 secrets[name] = {'file': str(dev_file), 'name': f'gba-qa_{name}'}
             service_secrets.append({'source': name, 'target': target})
+        if history_enabled and history_secrets != HISTORY_READONLY_TARGETS:
+            raise SystemExit('Product history requires both dedicated readonly source secrets')
 
         volumes = [{'type': 'volume', 'source': 'qa-dataprotection-keys', 'target': '/root/.aspnet/DataProtection-Keys'}]
+        history_pacing = False
         for volume in source.get('volumes', []):
             target = volume.get('target')
             if target in DATA_BIND_TARGETS:
@@ -101,6 +121,14 @@ def main() -> None:
             elif volume.get('type') == 'bind' and volume.get('read_only') and target.startswith('/run/gba/'):
                 volumes.append({'type': 'bind', 'source': volume['source'], 'target': target, 'read_only': True,
                                 'bind': {'create_host_path': False}})
+            elif history_enabled and volume.get('type') == 'bind' and target == SOURCE_PACING_LOCK:
+                if volume.get('read_only') or volume['source'] != SOURCE_PACING_LOCK:
+                    raise SystemExit('Product history must share the existing host source pacing lock')
+                volumes.append({'type': 'bind', 'source': volume['source'], 'target': target, 'read_only': False,
+                                'bind': {'create_host_path': False}})
+                history_pacing = True
+        if history_enabled and not history_pacing:
+            raise SystemExit('Product history source pacing lock is missing')
 
         service = {
             'image': source['image'],
