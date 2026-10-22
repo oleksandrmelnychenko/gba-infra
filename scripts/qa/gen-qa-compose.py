@@ -86,7 +86,7 @@ def qa_environment(environment: dict, service: str) -> dict:
             key_file = STATE_DIR / 'nba' / 'api-key'
             if not key_file.is_file() or not key_file.read_text().strip():
                 raise SystemExit('Prepare isolated QA NBA credentials before regenerating QA compose')
-            result['GbaNbaApi__Url'] = 'http://host.docker.internal:8003'
+            result['GbaNbaApi__Url'] = 'http://host.docker.internal:8012'
             result['GbaNbaApi__SourceEnvironment'] = 'qa'
             result['GbaNbaApi__Key'] = key_file.read_text().strip()
         if str(result.get('ProductSourceHistory__Enabled', '')).lower() == 'true':

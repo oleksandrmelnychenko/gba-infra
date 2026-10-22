@@ -22,14 +22,14 @@ def main():
     dev_path = Path('/private/claude-deploy-reopen-20261014/candidate-compose.private.json')
     qa_path = Path('/private/gba-qa/qa-compose.private.json')
     routing = json.loads(Path('/private/gba-qa/nba/api-routing.json').read_text())
-    if routing.get('GbaNbaApi__SourceEnvironment') != 'qa' or routing.get('GbaNbaApi__Url') != 'http://host.docker.internal:8003':
+    if routing.get('GbaNbaApi__SourceEnvironment') != 'qa' or routing.get('GbaNbaApi__Url') != 'http://host.docker.internal:8012':
         raise SystemExit('QA NBA routing must target the isolated service')
     documents = [(dev_path, json.loads(dev_path.read_text()), 'data-concord'),
                  (qa_path, json.loads(qa_path.read_text()), 'data-concord-qa')]
     for _, value, service in documents:
         current = value['services'][service]['environment'].get('GbaNbaApi__Url')
         allowed = ('http://host.docker.internal:8002',) if service == 'data-concord' else (
-            'http://host.docker.internal:8002', 'http://host.docker.internal:8003')
+            'http://host.docker.internal:8002', 'http://host.docker.internal:8012')
         if current not in allowed:
             raise SystemExit('Unexpected current NBA URL; review the runtime before rerouting')
     documents[0][1]['services']['data-concord']['environment']['GbaNbaApi__SourceEnvironment'] = 'dev'

@@ -17,7 +17,7 @@ def qa_settings(source, key):
         **{name: source[name] for name in required},
         "DB_PORT": source.get("DB_PORT", "1433"),
         "DB_NAME": "ConcordDb_V5_QA", "MONGO_DB": "gba_nba_qa",
-        "SOURCE_ENVIRONMENT": "qa", "API_PORT": "8003",
+        "SOURCE_ENVIRONMENT": "qa", "API_PORT": "8012",
         "INTERNAL_API_KEY": key,
         "GENERATION_ENABLED": "false", "WARMERS_ENABLED": "false",
         "SOURCE_HISTORY_START_DATE": source.get("SOURCE_HISTORY_START_DATE", "2025-01-01"),
@@ -53,7 +53,7 @@ def main():
         return json.dumps(str(value), ensure_ascii=False)
     write_private(args.output / "qa.env", "\n".join(f"{name}={quote(value)}" for name, value in settings.items()) + "\n")
     write_private(key_file, key + "\n")
-    write_private(args.output / "api-routing.json", json.dumps({"GbaNbaApi__Url": "http://host.docker.internal:8003", "GbaNbaApi__Key": key, "GbaNbaApi__SourceEnvironment": "qa"}))
+    write_private(args.output / "api-routing.json", json.dumps({"GbaNbaApi__Url": "http://host.docker.internal:8012", "GbaNbaApi__Key": key, "GbaNbaApi__SourceEnvironment": "qa"}))
     user = settings["DB_USER"].replace("'", "''")
     identifier = settings["DB_USER"].replace("]", "]]")
     sql = f"""USE [ConcordDb_V5_QA];
@@ -63,7 +63,7 @@ IF IS_ROLEMEMBER(N'db_datareader', N'{user}') <> 1 ALTER ROLE [db_datareader] AD
 SELECT DB_NAME() AS DatabaseName, IS_ROLEMEMBER(N'db_datareader', N'{user}') AS IsReader;
 """
     write_private(args.output / "grant-qa-reader.sql", sql)
-    print(json.dumps({"prepared": str(args.output), "sql": "ConcordDb_V5_QA", "mongo": "gba_nba_qa", "port": 8003, "generationEnabled": False, "runtimeChanged": False}))
+    print(json.dumps({"prepared": str(args.output), "sql": "ConcordDb_V5_QA", "mongo": "gba_nba_qa", "port": 8012, "generationEnabled": False, "runtimeChanged": False}))
 
 
 if __name__ == "__main__":

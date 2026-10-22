@@ -1,6 +1,6 @@
 # QA NBA isolation
 
-QA serves the existing `ConcordDb_V5_QA` SQL database and a separate, initially empty `gba_nba_qa` Mongo namespace on port 8003. DEV retains port 8002 and its current task state. There is no database copy, full sync, task backfill or QA scheduler/retraining service.
+QA serves the existing `ConcordDb_V5_QA` SQL database and a separate, initially empty `gba_nba_qa` Mongo namespace on port 8012. DEV retains port 8002 and its current task state. There is no database copy, full sync, task backfill or QA scheduler/retraining service.
 
 QA generation and feedback are disabled because downstream recommendation services are not isolated. The API source response reports this explicitly; an empty task namespace does not pass generation readiness. Its sale-activity watermark is not proof of a completed source sync.
 

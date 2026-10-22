@@ -66,7 +66,7 @@ def verify(nba_repo):
     try:
         for environment, service, port, database in (
             ('dev', 'gba-nba.service', 8002, 'ConcordDb_V5'),
-            ('qa', 'gba-nba-qa.service', 8003, 'ConcordDb_V5_QA'),
+            ('qa', 'gba-nba-qa.service', 8012, 'ConcordDb_V5_QA'),
         ):
             pid, config = runtime_settings(service, port, Settings)
             if config.source_environment != environment or config.db_name != database or not config.internal_api_key:

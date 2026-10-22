@@ -50,7 +50,7 @@ class ProductHistoryQaTests(unittest.TestCase):
         folder.mkdir(parents=True)
         (folder / 'api-key').write_text('qa-fixture-secret')
         api = self.generate()['services']['data-concord-qa']['environment']
-        self.assertEqual('http://host.docker.internal:8003', api['GbaNbaApi__Url'])
+        self.assertEqual('http://host.docker.internal:8012', api['GbaNbaApi__Url'])
         self.assertEqual('qa-fixture-secret', api['GbaNbaApi__Key'])
         self.assertEqual('qa', api['GbaNbaApi__SourceEnvironment'])
 
