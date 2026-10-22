@@ -17,6 +17,23 @@ verify = load('verify-nba-isolation')
 
 
 class NbaIsolationTests(unittest.TestCase):
+    def test_proxy_verification_rejects_unused_key_wrong_key_route_and_environment(self):
+        correct = {'GbaNbaApi__Url': 'http://host.docker.internal:8012',
+            'GbaNbaApi__SourceEnvironment': 'qa', 'GbaNbaApi__ApiKey': 'qa-fixture-secret'}
+        result = verify.validate_proxy_environment(correct, 'qa', 8012, 'qa-fixture-secret')
+        self.assertTrue(all(result.values()))
+        self.assertNotIn('qa-fixture-secret', str(result))
+        for change in (
+            {'GbaNbaApi__Url': 'http://host.docker.internal:8002'},
+            {'GbaNbaApi__SourceEnvironment': 'dev'},
+            {'GbaNbaApi__ApiKey': 'dev-fixture-secret'},
+            {'GbaNbaApi__ApiKey': '', 'GbaNbaApi__Key': 'qa-fixture-secret'},
+        ):
+            with self.subTest(change=tuple(change)):
+                with self.assertRaises(ValueError) as error:
+                    verify.validate_proxy_environment({**correct, **change}, 'qa', 8012, 'qa-fixture-secret')
+                self.assertNotIn('fixture-secret', str(error.exception))
+
     def test_preparation_cannot_inherit_dev_business_namespaces_or_downstream_routes(self):
         settings = prepare.qa_settings({'DB_HOST': 'fixture', 'DB_USER': 'readonly', 'DB_PASSWORD': 'fixture',
             'MONGO_URI': 'mongodb://fixture', 'DB_NAME': 'ConcordDb_V5', 'MONGO_DB': 'gba_nba',

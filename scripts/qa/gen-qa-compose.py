@@ -81,6 +81,7 @@ def qa_environment(environment: dict, service: str) -> dict:
     result.update(FORCED_ENVIRONMENT)
     result.update(qa_conversion_flags(service, environment))
     if service == 'data-concord':
+        result.pop('GbaNbaApi__Key', None)
         result['BackgroundWriters__Enabled'] = 'true'
         if result.get('GbaNbaApi__Url'):
             key_file = STATE_DIR / 'nba' / 'api-key'

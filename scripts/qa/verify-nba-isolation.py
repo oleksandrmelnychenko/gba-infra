@@ -8,6 +8,7 @@ is created, checked and dropped in each namespace.
 import argparse
 import json
 import os
+import secrets
 from pathlib import Path
 import subprocess
 import sys
@@ -55,7 +56,39 @@ def runtime_settings(service, port, settings_type):
     return pid, settings
 
 
-def verify(nba_repo):
+def validate_proxy_environment(environment, expected_environment, port, api_key):
+    """Validate the .NET field names actually consumed, never return any key value."""
+    if environment.get('GbaNbaApi__Url') != f'http://host.docker.internal:{port}':
+        raise ValueError('API NBA URL differs from its isolated runtime')
+    if environment.get('GbaNbaApi__SourceEnvironment') != expected_environment:
+        raise ValueError('API expected NBA source environment differs from its runtime')
+    if 'GbaNbaApi__Key' in environment:
+        raise ValueError('Obsolete NBA Key configuration must be removed; .NET consumes ApiKey')
+    configured_key = environment.get('GbaNbaApi__ApiKey', '')
+    if not configured_key or not secrets.compare_digest(configured_key, api_key):
+        raise ValueError('API NBA ApiKey differs from its isolated runtime')
+    return {'urlMatches': True, 'sourceEnvironmentMatches': True, 'apiKeyMatches': True}
+
+
+def proxy_configuration(container, expected_environment, port, api_key):
+    values = json.loads(subprocess.check_output(
+        ['docker', 'inspect', '--format', '{{json .Config.Env}}', container], text=True))
+    environment = dict(value.split('=', 1) for value in values if '=' in value)
+    return validate_proxy_environment(environment, expected_environment, port, api_key)
+
+
+def api_container(environment):
+    if environment == 'qa':
+        return 'data-concord-qa'
+    # Compose-generated DEV container names are not the service key "data-concord".
+    matches = subprocess.check_output(['docker', 'ps', '--filter', 'label=com.docker.compose.project=gba-dev',
+        '--filter', 'label=com.docker.compose.service=data-concord', '--format', '{{.ID}}'], text=True).split()
+    if len(matches) != 1:
+        raise RuntimeError('Expected exactly one running DEV API container')
+    return matches[0]
+
+
+def verify(nba_repo, services_only=False):
     sys.path.insert(0, str(nba_repo))
     from app.core.config import Settings
     import httpx
@@ -95,6 +128,9 @@ def verify(nba_repo):
                 engine.dispose()
             result[environment] = {'pid': pid, 'port': port, 'sql': sql, 'mongo': config.mongo_db,
                 'source': provenance, 'wrongEnvironmentMutationRejected': True}
+            if not services_only:
+                container = api_container(environment)
+                result[environment]['apiConfiguration'] = proxy_configuration(container, environment, port, config.internal_api_key)
         if result['dev']['pid'] == result['qa']['pid']:
             raise RuntimeError('DEV and QA must not share process-local caches or locks')
         if settings['dev'].internal_api_key == settings['qa'].internal_api_key:
@@ -105,6 +141,7 @@ def verify(nba_repo):
             clients.append(MongoClient(settings[environment].mongo_uri, serverSelectionTimeoutMS=5000, socketTimeoutMS=10000))
         result['mongoProbe'] = mongo_probe(clients[0][settings['dev'].mongo_db], clients[1][settings['qa'].mongo_db])
         result['cacheIsolation'] = 'Distinct web process PIDs; module-level caches and threading locks are not shared.'
+        result['apiRoutingVerified'] = not services_only
         return result
     finally:
         for client in clients:
@@ -115,9 +152,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--nba-repo', type=Path, default=Path('/root/projects/gba-nba'))
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--services-only', action='store_true', help='Pre-routing check only; full API configuration acceptance is explicitly skipped')
     args = parser.parse_args()
     try:
-        result = verify(args.nba_repo)
+        result = verify(args.nba_repo, services_only=args.services_only)
     except Exception as error:
         # Connection exceptions can contain credentials; do not print their text.
         print(json.dumps({'verified': False, 'errorType': type(error).__name__}))
@@ -126,7 +164,7 @@ def main():
     with os.fdopen(fd, 'w') as file:
         json.dump(result, file, indent=2)
     args.output.chmod(0o600)
-    print(json.dumps({'verified': True, 'evidence': str(args.output), 'probeFixturesRemoved': True}))
+    print(json.dumps({'verified': True, 'apiRoutingVerified': result['apiRoutingVerified'], 'evidence': str(args.output), 'probeFixturesRemoved': True}))
     return 0
 
 
