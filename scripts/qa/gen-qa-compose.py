@@ -54,6 +54,20 @@ def rewrite_connection_string(text: str) -> str:
     return rewritten
 
 
+def qa_conversion_flags(service: str, source: dict) -> dict:
+    existing = {}
+    if OUTPUT.is_file():
+        document = json.loads(OUTPUT.read_text())
+        existing = document.get('services', {}).get(SERVICES[service][0], {}).get('environment', {})
+    result = {}
+    for flag in ('GBA_LIBREOFFICE_POOL_ENABLED', 'GBA_DOCUMENT_CONVERSION_TIMINGS'):
+        value = str(os.environ.get(flag, existing.get(flag, source.get(flag, 'false')))).lower()
+        if value not in ('true', 'false'):
+            raise SystemExit(f'{flag} must be true or false')
+        result[flag] = value
+    return result
+
+
 def qa_environment(environment: dict, service: str) -> dict:
     result = {}
     for key, value in environment.items():
@@ -65,8 +79,16 @@ def qa_environment(environment: dict, service: str) -> dict:
             value = 'false'
         result[key] = value
     result.update(FORCED_ENVIRONMENT)
+    result.update(qa_conversion_flags(service, environment))
     if service == 'data-concord':
         result['BackgroundWriters__Enabled'] = 'true'
+        if result.get('GbaNbaApi__Url'):
+            key_file = STATE_DIR / 'nba' / 'api-key'
+            if not key_file.is_file() or not key_file.read_text().strip():
+                raise SystemExit('Prepare isolated QA NBA credentials before regenerating QA compose')
+            result['GbaNbaApi__Url'] = 'http://host.docker.internal:8003'
+            result['GbaNbaApi__SourceEnvironment'] = 'qa'
+            result['GbaNbaApi__Key'] = key_file.read_text().strip()
         if str(result.get('ProductSourceHistory__Enabled', '')).lower() == 'true':
             database = result.get('ProductSourceHistory__OwnExpectedDatabase')
             if database not in DATABASE_RENAMES:

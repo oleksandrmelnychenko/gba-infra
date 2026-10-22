@@ -43,6 +43,34 @@ class ProductHistoryQaTests(unittest.TestCase):
         generator.main()
         return json.loads(generator.OUTPUT.read_text())
 
+    def test_nba_refresh_preserves_qa_route_and_separate_key(self):
+        source = self.dev['services']['data-concord']['environment']
+        source.update({'GbaNbaApi__Url': 'http://host.docker.internal:8002', 'GbaNbaApi__Key': 'dev-secret'})
+        folder = generator.STATE_DIR / 'nba'
+        folder.mkdir(parents=True)
+        (folder / 'api-key').write_text('qa-fixture-secret')
+        api = self.generate()['services']['data-concord-qa']['environment']
+        self.assertEqual('http://host.docker.internal:8003', api['GbaNbaApi__Url'])
+        self.assertEqual('qa-fixture-secret', api['GbaNbaApi__Key'])
+        self.assertEqual('qa', api['GbaNbaApi__SourceEnvironment'])
+
+    def test_nba_refresh_refuses_silent_shared_dev_fallback(self):
+        self.dev['services']['data-concord']['environment']['GbaNbaApi__Url'] = 'http://host.docker.internal:8002'
+        with self.assertRaisesRegex(SystemExit, 'isolated QA NBA'):
+            self.generate()
+
+    def test_conversion_flags_default_off_and_preserve_existing_qa_selection(self):
+        result = self.generate()
+        api = result['services']['data-concord-qa']['environment']
+        self.assertEqual('false', api['GBA_LIBREOFFICE_POOL_ENABLED'])
+        self.assertEqual('false', api['GBA_DOCUMENT_CONVERSION_TIMINGS'])
+        api['GBA_LIBREOFFICE_POOL_ENABLED'] = 'true'
+        api['GBA_DOCUMENT_CONVERSION_TIMINGS'] = 'true'
+        generator.OUTPUT.write_text(json.dumps(result))
+        refreshed = self.generate()['services']['data-concord-qa']['environment']
+        self.assertEqual('true', refreshed['GBA_LIBREOFFICE_POOL_ENABLED'])
+        self.assertEqual('true', refreshed['GBA_DOCUMENT_CONVERSION_TIMINGS'])
+
     def test_history_gets_only_readonly_sources_and_shared_pacing_with_qa_database(self):
         result = self.generate()
         api = result['services']['data-concord-qa']
