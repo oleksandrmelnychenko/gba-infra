@@ -27,7 +27,9 @@
 - Background writers увімкнені: списання, outbox і решта ефектів продажів працюють як на DEV.
 - 1С забирає експорт тільки з DEV, бо QA не має публічної адреси.
 
-AI-сервіси (рекомендації, NBA, solvency, pricing, products, forecast, procure) спільні й читають DEV. У QA їхні панелі показують DEV-дані, а задачі NBA, змінені в QA, змінюються і для DEV.
+NBA ізольовано: DEV `gba-nba.service:8002` читає `ConcordDb_V5` і Mongo `gba_nba`; QA `gba-nba-qa.service:8012` читає `ConcordDb_V5_QA` і Mongo `gba_nba_qa`. Задачі, контакти та зв'язки продажів у QA не змінюють DEV. QA не запускає генерацію, workers або timers автоматично. Перевірка маршрутизації, SQL-доступу та незалежності Mongo: `scripts/qa/verify-nba-isolation.py`.
+
+Решта AI-сервісів (рекомендації, solvency, pricing, products, forecast, procure) спільні й читають DEV. Їхні панелі не є доказом ізоляції QA-даних. Для оновлення лише web-процесу закупівель встановлюється drop-in `systemd/gba-procure-web-only.conf` у `/etc/systemd/system/gba-procure.service.d/web-only.conf`: `WARM_ON_STARTUP=false` не запускає новий розрахунок під час перезапуску. Налаштування окремих workers і scheduler при цьому не змінюються.
 
 ## Скрипти (`scripts/qa/`)
 
