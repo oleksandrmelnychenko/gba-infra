@@ -45,13 +45,13 @@ class ProductHistoryQaTests(unittest.TestCase):
 
     def test_nba_refresh_preserves_qa_route_and_separate_key(self):
         source = self.dev['services']['data-concord']['environment']
-        source.update({'GbaNbaApi__Url': 'http://host.docker.internal:8002', 'GbaNbaApi__Key': 'dev-secret'})
+        source.update({'GbaNbaApi__Url': 'http://host.docker.internal:8002', 'GbaNbaApi__ApiKey': 'dev-secret'})
         folder = generator.STATE_DIR / 'nba'
         folder.mkdir(parents=True)
         (folder / 'api-key').write_text('qa-fixture-secret')
         api = self.generate()['services']['data-concord-qa']['environment']
         self.assertEqual('http://host.docker.internal:8012', api['GbaNbaApi__Url'])
-        self.assertEqual('qa-fixture-secret', api['GbaNbaApi__Key'])
+        self.assertEqual('qa-fixture-secret', api['GbaNbaApi__ApiKey'])
         self.assertEqual('qa', api['GbaNbaApi__SourceEnvironment'])
 
     def test_nba_refresh_refuses_silent_shared_dev_fallback(self):

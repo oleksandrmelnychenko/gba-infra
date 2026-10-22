@@ -53,7 +53,7 @@ def main():
         return json.dumps(str(value), ensure_ascii=False)
     write_private(args.output / "qa.env", "\n".join(f"{name}={quote(value)}" for name, value in settings.items()) + "\n")
     write_private(key_file, key + "\n")
-    write_private(args.output / "api-routing.json", json.dumps({"GbaNbaApi__Url": "http://host.docker.internal:8012", "GbaNbaApi__Key": key, "GbaNbaApi__SourceEnvironment": "qa"}))
+    write_private(args.output / "api-routing.json", json.dumps({"GbaNbaApi__Url": "http://host.docker.internal:8012", "GbaNbaApi__ApiKey": key, "GbaNbaApi__SourceEnvironment": "qa"}))
     user = settings["DB_USER"].replace("'", "''")
     identifier = settings["DB_USER"].replace("]", "]]")
     sql = f"""USE [ConcordDb_V5_QA];

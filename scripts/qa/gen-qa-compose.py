@@ -88,7 +88,7 @@ def qa_environment(environment: dict, service: str) -> dict:
                 raise SystemExit('Prepare isolated QA NBA credentials before regenerating QA compose')
             result['GbaNbaApi__Url'] = 'http://host.docker.internal:8012'
             result['GbaNbaApi__SourceEnvironment'] = 'qa'
-            result['GbaNbaApi__Key'] = key_file.read_text().strip()
+            result['GbaNbaApi__ApiKey'] = key_file.read_text().strip()
         if str(result.get('ProductSourceHistory__Enabled', '')).lower() == 'true':
             database = result.get('ProductSourceHistory__OwnExpectedDatabase')
             if database not in DATABASE_RENAMES:

@@ -33,7 +33,9 @@ def main():
         if current not in allowed:
             raise SystemExit('Unexpected current NBA URL; review the runtime before rerouting')
     documents[0][1]['services']['data-concord']['environment']['GbaNbaApi__SourceEnvironment'] = 'dev'
-    documents[1][1]['services']['data-concord-qa']['environment'].update(routing)
+    qa_environment = documents[1][1]['services']['data-concord-qa']['environment']
+    qa_environment.pop('GbaNbaApi__Key', None)
+    qa_environment.update(routing)
     for path, value, _ in documents:
         write_json(path, value)
     print('Prepared DEV expected environment and isolated QA NBA routing; API containers were not restarted.')
