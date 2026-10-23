@@ -61,6 +61,40 @@ class ProductHistoryQaTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, 'isolated QA NBA'):
             self.generate()
 
+    def test_unconfigured_products_is_explicitly_disabled_without_dev_defaults(self):
+        api = self.generate()['services']['data-concord-qa']['environment']
+        self.assertEqual('', api['ProductsApi__Url'])
+        self.assertEqual('', api['ProductsApi__ApiKey'])
+        self.assertEqual('qa', api['ProductsApi__SourceEnvironment'])
+
+    def test_products_refresh_preserves_qa_route_key_and_environment(self):
+        source = self.dev['services']['data-concord']['environment']
+        source.update({'ProductsApi__Url': 'http://host.docker.internal:8005',
+                       'ProductsApi__ApiKey': 'dev-key', 'ProductsApi__Key': 'obsolete'})
+        folder = generator.STATE_DIR / 'products'
+        folder.mkdir(parents=True)
+        (folder / 'api-key').write_text('qa-key')
+        api = self.generate()['services']['data-concord-qa']['environment']
+        self.assertEqual('http://host.docker.internal:8015', api['ProductsApi__Url'])
+        self.assertEqual('qa-key', api['ProductsApi__ApiKey'])
+        self.assertEqual('qa', api['ProductsApi__SourceEnvironment'])
+        self.assertNotIn('ProductsApi__Key', api)
+        # A second refresh still derives QA isolation from its private credentials.
+        refreshed = self.generate()['services']['data-concord-qa']['environment']
+        self.assertEqual(api['ProductsApi__ApiKey'], refreshed['ProductsApi__ApiKey'])
+        self.assertEqual('http://host.docker.internal:8005', source['ProductsApi__Url'])
+
+    def test_products_refresh_refuses_shared_dev_fallback_and_reused_key(self):
+        source = self.dev['services']['data-concord']['environment']
+        source.update({'ProductsApi__Url': 'http://host.docker.internal:8005', 'ProductsApi__ApiKey': 'dev-key'})
+        with self.assertRaisesRegex(SystemExit, 'isolated QA products'):
+            self.generate()
+        folder = generator.STATE_DIR / 'products'
+        folder.mkdir(parents=True)
+        (folder / 'api-key').write_text('dev-key')
+        with self.assertRaisesRegex(SystemExit, 'distinct API key'):
+            self.generate()
+
     def test_conversion_flags_default_off_and_preserve_existing_qa_selection(self):
         result = self.generate()
         api = result['services']['data-concord-qa']['environment']

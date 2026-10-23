@@ -13,6 +13,7 @@ from pathlib import Path
 import subprocess
 import sys
 from uuid import uuid4
+from typing import get_origin
 
 
 def mongo_probe(dev_db, qa_db):
@@ -52,6 +53,12 @@ def runtime_settings(service, port, settings_type):
     # Use exactly the running process overrides and its existing dotenv fallback.
     fields = settings_type.model_fields
     overrides = {key.lower(): value for key, value in environment.items() if key.lower() in fields}
+    # Constructor overrides do not apply BaseSettings' environment JSON decoding.
+    # Preserve the actual process values for structured fields such as CORS origins.
+    for key, value in overrides.items():
+        annotation = fields[key].annotation
+        if get_origin(annotation) in (list, dict, set, frozenset, tuple) or annotation in (list, dict, set, frozenset, tuple):
+            overrides[key] = json.loads(value)
     settings = settings_type(_env_file=process.joinpath('cwd').resolve() / '.env', **overrides)
     return pid, settings
 

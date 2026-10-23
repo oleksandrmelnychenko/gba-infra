@@ -1,0 +1,20 @@
+[Unit]
+Description=GBA QA Products Intelligence API (isolated SQL and Redis, warmers disabled)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/projects/gba-ai-services/gba-products
+EnvironmentFile=/private/gba-qa/products/qa.env
+ExecStart=/root/projects/gba-products/.venv/bin/python -m uvicorn app.api.main:app --host 0.0.0.0 --port 8015
+Restart=on-failure
+RestartSec=3
+SyslogIdentifier=gba-products-qa
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/private/gba-qa/products
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

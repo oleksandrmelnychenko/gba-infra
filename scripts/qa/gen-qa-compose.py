@@ -90,6 +90,22 @@ def qa_environment(environment: dict, service: str) -> dict:
             result['GbaNbaApi__Url'] = 'http://host.docker.internal:8012'
             result['GbaNbaApi__SourceEnvironment'] = 'qa'
             result['GbaNbaApi__ApiKey'] = key_file.read_text().strip()
+        result.pop('ProductsApi__Key', None)
+        result['ProductsApi__SourceEnvironment'] = 'qa'
+        if result.get('ProductsApi__Url'):
+            key_file = STATE_DIR / 'products' / 'api-key'
+            if not key_file.is_file() or not key_file.read_text().strip():
+                raise SystemExit('Prepare isolated QA products credentials before regenerating QA compose')
+            key = key_file.read_text().strip()
+            if key == result.get('ProductsApi__ApiKey'):
+                raise SystemExit('QA products must use a distinct API key')
+            result['ProductsApi__Url'] = 'http://host.docker.internal:8015'
+            result['ProductsApi__SourceEnvironment'] = 'qa'
+            result['ProductsApi__ApiKey'] = key
+        else:
+            # Empty values explicitly override appsettings.Development defaults.
+            result['ProductsApi__Url'] = ''
+            result['ProductsApi__ApiKey'] = ''
         if str(result.get('ProductSourceHistory__Enabled', '')).lower() == 'true':
             database = result.get('ProductSourceHistory__OwnExpectedDatabase')
             if database not in DATABASE_RENAMES:
