@@ -45,6 +45,10 @@ cache keys are not flushed or modified.
 ## Release and acceptance
 
 Integrate the source fence into both Products service deployments and .NET first.
+Install `gba-products-dev-source.conf` as the DEV service's systemd drop-in so
+both services execute the canonical monorepo code. It retains the existing DEV
+environment file and Python interpreter. Install the canonical QA unit, enable
+it, reload systemd and restart the two Products services after source validation.
 Set `ProductsApi__SourceEnvironment=dev` on DEV. Apply QA's private routing with
 `scripts/qa/route-products-qa.py`, then release the API containers using the normal
 reviewed deployment. This route helper edits only the QA compose document and
