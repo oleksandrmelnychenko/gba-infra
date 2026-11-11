@@ -13,7 +13,7 @@ OUTPUT = STATE_DIR / 'qa-compose.private.json'
 DATABASE_RENAMES = {
     'ConcordDb_V5': 'ConcordDb_V5_QA',
     'ConcordDb_Data': 'ConcordDb_Data_QA',
-    'ConcordIdentityDb': 'ConcordIdentityDb_QA',
+    'ConcordIdentityDb': 'ConcordIdentityDb',
     'GbaVehicleRegistry': 'GbaVehicleRegistry_QA',
 }
 LOCAL_CONNECTION_TARGETS = {
@@ -38,6 +38,7 @@ FORCED_ENVIRONMENT = {
     'Maintenance__QaEnabled': 'false',
     'SchedulerTasks__SchedulingEnabled': 'false',
     'GBA_CONTROL_DATABASE_NAME': 'ConcordDb_V5_QA',
+    'OneCExport__Environment': 'qa',
 }
 
 

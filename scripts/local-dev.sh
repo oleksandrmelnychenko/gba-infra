@@ -32,12 +32,20 @@ readonly -a REQUIRED_SECRETS=(
     EcommerceInternalAuth__ApiKey
     Elasticsearch__AppPassword
     Elasticsearch__Password
+    ForecastApi__ApiKey
+    GbaNbaApi__ApiKey
+    ProcureCostInternalAuth__ApiKey
+    PricingApi__ApiKey
+    ProcurementApi__ApiKey
+    ProductsApi__ApiKey
+    RecommendationApi__ApiKey
     Security__JwtKey
     Security__JwtPrivateKey
     Security__JwtPublicKey
     ShopAuth__JwtKey
     Security__PriceEncryptionIV
     Security__PriceEncryptionKey
+    SolvencyApi__ApiKey
     Storefront__PriceTokenSecret
 )
 
@@ -53,6 +61,52 @@ compose() {
 die() {
     printf 'ERROR: %s\n' "$*" >&2
     exit 1
+}
+
+require_nonempty_regular_file() {
+    local path="$1"
+    local label="$2"
+
+    [[ ! -L "$path" && -f "$path" ]] ||
+        die "$label must be a regular file and not a symbolic link."
+    [[ -s "$path" ]] || die "$label must not be empty."
+}
+
+validate_secret_directory_shape() {
+    [[ ! -L "$SECRET_DIR" && -d "$SECRET_DIR" ]] ||
+        die "$SECRET_DIR must be a real directory and not a symbolic link."
+
+    local non_regular_entries
+    if ! non_regular_entries="$(find "$SECRET_DIR" -mindepth 1 -maxdepth 1 ! -type f -print)"; then
+        die 'Unable to inspect secret directory entries.'
+    fi
+    if [[ -n "$non_regular_entries" ]]; then
+        die 'secrets/dev may contain only regular files; links, directories, and special files are not allowed.'
+    fi
+}
+
+validate_required_secret_files() {
+    local secret
+    for secret in "${REQUIRED_SECRETS[@]}"; do
+        require_nonempty_regular_file "$SECRET_DIR/$secret" "Secret $secret"
+    done
+}
+
+install_missing_secret_templates() {
+    local template
+    local target
+    for template in "$SECRET_TEMPLATE_DIR"/*; do
+        [[ -f "$template" && ! -L "$template" ]] ||
+            die "Secret template must be a regular file: $template."
+        [[ "${template##*/}" != 'README.md' ]] || continue
+
+        target="$SECRET_DIR/${template##*/}"
+        if [[ ! -e "$target" && ! -L "$target" ]]; then
+            cp -- "$template" "$target"
+            chmod 600 -- "$target"
+            printf 'Created missing secret template %s.\n' "$target"
+        fi
+    done
 }
 
 ensure_token_keys() {
@@ -91,17 +145,27 @@ check_token_keys() {
 }
 
 init() {
+    if [[ -L "$ENV_FILE" || (-e "$ENV_FILE" && ! -f "$ENV_FILE") ]]; then
+        die "$ENV_FILE must be a regular file and not a symbolic link."
+    fi
     if [[ ! -e "$ENV_FILE" ]]; then
         cp -- "$ENV_TEMPLATE" "$ENV_FILE"
         printf 'Created %s from the safe template.\n' "$ENV_FILE"
     fi
 
+    if [[ -L "$SECRET_DIR" || (-e "$SECRET_DIR" && ! -d "$SECRET_DIR") ]]; then
+        die "$SECRET_DIR must be a real directory and not a symbolic link."
+    fi
     if [[ ! -d "$SECRET_DIR" ]]; then
         cp -R -- "$SECRET_TEMPLATE_DIR" "$SECRET_DIR"
         rm -f -- "$SECRET_DIR/README.md"
         printf 'Created %s from safe templates.\n' "$SECRET_DIR"
     fi
 
+    require_nonempty_regular_file "$ENV_FILE" "$ENV_FILE"
+    validate_secret_directory_shape
+    install_missing_secret_templates
+    validate_required_secret_files
     chmod 600 -- "$ENV_FILE"
     find "$SECRET_DIR" -type f -exec chmod 600 {} +
     ensure_token_keys
@@ -112,8 +176,10 @@ check() {
     command -v docker >/dev/null 2>&1 || die 'docker is required.'
     docker compose version >/dev/null 2>&1 || die 'docker compose v2 is required.'
 
-    [[ -f "$ENV_FILE" ]] || die "Missing $ENV_FILE. Run '$0 init'."
-    [[ -d "$SECRET_DIR" ]] || die "Missing $SECRET_DIR. Run '$0 init'."
+    [[ -e "$ENV_FILE" || -L "$ENV_FILE" ]] || die "Missing $ENV_FILE. Run '$0 init'."
+    [[ -e "$SECRET_DIR" || -L "$SECRET_DIR" ]] || die "Missing $SECRET_DIR. Run '$0 init'."
+    require_nonempty_regular_file "$ENV_FILE" "$ENV_FILE"
+    validate_secret_directory_shape
 
     local repository
     for repository in "${REQUIRED_REPOSITORIES[@]}"; do
@@ -121,21 +187,30 @@ check() {
             die "Missing sibling repository $PROJECTS_ROOT/$repository."
     done
 
-    local secret
-    for secret in "${REQUIRED_SECRETS[@]}"; do
-        [[ -s "$SECRET_DIR/$secret" ]] || die "Missing or empty secret: $secret."
-    done
+    validate_required_secret_files
 
+    local placeholder_status
     if grep -R -n -- 'CHANGE_ME' "$ENV_FILE" "$SECRET_DIR" >/dev/null; then
         die 'Placeholder values remain in .env.dev or secrets/dev.'
+    else
+        placeholder_status=$?
+        [[ "$placeholder_status" -eq 1 ]] ||
+            die 'Unable to scan .env.dev and secrets/dev for placeholder values.'
     fi
 
     check_token_keys
 
-    if find "$SECRET_DIR" -type f -perm /027 -print -quit | grep -q .; then
+    local insecure_secret_files
+    if ! insecure_secret_files="$(find "$ENV_FILE" "$SECRET_DIR" -type f -perm /037 -print)"; then
+        die 'Unable to inspect secret file permissions.'
+    fi
+    if [[ -n "$insecure_secret_files" ]]; then
         die 'Secret files may not be group-writable/executable or world-accessible.'
     fi
 
+    "$INFRA_ROOT/scripts/verify-secure-exposure.sh" \
+        --env-file "$ENV_FILE" \
+        --validate-config-only
     compose config --quiet
     printf 'Local DEV configuration is complete and Compose validation passed.\n'
 }

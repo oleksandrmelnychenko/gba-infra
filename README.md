@@ -156,12 +156,14 @@ finished and been backed up.
 Run this after compose changes or a server restart:
 
 ```bash
-./scripts/verify-secure-exposure.sh
+./scripts/verify-secure-exposure.sh --env-file .env.dev
+./scripts/verify-ai-firewall.sh
 ```
 
 Expected public ports are only `80`, `443`, and `22`. Development ports
-(`1433`, `35981`, `35982`, `62506`, `8081`, `8082`, `9200`) must bind to
-`127.0.0.1` only.
+(`1433`, `35981`, `35982`, `62506`, `8081`, `8082`, `8083`, `9200`) must bind
+only to `127.0.0.1` or to the private `GBA_DOCKER_HOST_GATEWAY_IP` used by
+Caddy. The verifier rejects wildcard, public, and non-RFC1918 gateway values.
 
 To re-apply Docker's host firewall guardrail:
 
@@ -171,6 +173,19 @@ To re-apply Docker's host firewall guardrail:
 
 It adds idempotent `DOCKER-USER` rules that allow only `80/443` from the
 public interface into Docker-published services.
+It also blocks host-run AI ports `8000..8006` on the public interface for IPv4
+and IPv6. Install the checked-in unit so the policy is restored after reboot:
+
+```bash
+sudo install -m 0644 systemd/gba-docker-firewall.service /etc/systemd/system/
+for service in reco procure nba solvency pricing products forecast; do
+  sudo install -d -m 0755 "/etc/systemd/system/gba-${service}.service.d"
+  sudo install -m 0644 systemd/gba-ai-require-firewall.conf \
+    "/etc/systemd/system/gba-${service}.service.d/10-require-firewall.conf"
+done
+sudo systemctl daemon-reload
+sudo systemctl enable --now gba-docker-firewall.service
+```
 
 ## AI fleet release gate
 

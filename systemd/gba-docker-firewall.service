@@ -1,0 +1,15 @@
+[Unit]
+Description=GBA persistent Docker and host ingress firewall
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+Before=gba-reco.service gba-procure.service gba-nba.service gba-solvency.service gba-pricing.service gba-products.service gba-forecast.service
+
+[Service]
+Type=oneshot
+ExecStart=/root/projects/gba-infra/scripts/harden-docker-firewall.sh
+ExecStartPost=/root/projects/gba-infra/scripts/verify-ai-firewall.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

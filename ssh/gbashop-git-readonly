@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+case "${SSH_ORIGINAL_COMMAND:-}" in
+    "git-upload-pack '/srv/git/gba_ecommerce.git'"|"git-upload-pack /srv/git/gba_ecommerce.git")
+        exec /usr/bin/git-upload-pack /srv/git/gba_ecommerce.git
+        ;;
+    *)
+        echo "Only read-only access to gba_ecommerce.git is allowed." >&2
+        exit 1
+        ;;
+esac

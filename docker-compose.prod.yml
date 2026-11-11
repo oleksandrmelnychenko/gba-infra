@@ -23,8 +23,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://api.${PROD_DOMAIN}/"
-      Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-true}"
-      Security__AccessTokenLifetimeMinutes: "60"
+      Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-false}"
+      Security__AccessTokenLifetimeMinutes: "15"
       Security__RefreshTokenLifetimeMinutes: "43200"
       ShopAuth__JwtIssuer: "GbaShop"
       ShopAuth__JwtAudience: "GbaShop"
@@ -63,7 +63,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://api.${PROD_DOMAIN}/"
-      Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-true}"
+      Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-false}"
       ShopAuth__JwtIssuer: "GbaShop"
       ShopAuth__JwtAudience: "GbaShop"
       ShopAuth__AcceptLegacySharedTokens: "false"
@@ -119,6 +119,8 @@ services:
       NEXT_PUBLIC_API_BASE_URL: "https://ecom-api.${PROD_DOMAIN}"
       NEXT_PUBLIC_SITE_URL: "https://shop.${PROD_DOMAIN}"
       NEXT_PUBLIC_BASE_URL: "https://shop.${PROD_DOMAIN}"
+      # Guests may decode only the retail price selected by the ecommerce API.
+      PRICE_VISIBILITY: "public"
       AUTH_JWT_ALGORITHM: "HS256"
       AUTH_JWT_ISSUER: "GbaShop"
       AUTH_JWT_AUDIENCE: "GbaShop"

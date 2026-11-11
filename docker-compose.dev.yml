@@ -1,4 +1,4 @@
-# DEV overlay — host ports exposed for direct access/debugging.
+# DEV overlay — host ports exposed only on loopback and the private Docker host gateway.
 # Reuses the existing external gba-mssql-data volume (restored databases).
 #   docker compose -p gba-dev -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.dev up -d
 
@@ -18,14 +18,32 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     secrets:
+      - source: ConnectionStrings__FenixOneCReadOnlyConnectionString
+        target: ConnectionStrings:FenixOneCReadOnlyConnectionString
+      - source: ConnectionStrings__AmgOneCReadOnlyConnectionString
+        target: ConnectionStrings:AmgOneCReadOnlyConnectionString
       - source: ConnectionStrings__VehicleRegistryConnectionString
         target: ConnectionStrings:VehicleRegistryConnectionString
+      - source: RecommendationApi__ApiKey
+        target: RecommendationApi:ApiKey
+      - source: ProcurementApi__ApiKey
+        target: ProcurementApi:ApiKey
+      - source: GbaNbaApi__ApiKey
+        target: GbaNbaApi:ApiKey
+      - source: SolvencyApi__ApiKey
+        target: SolvencyApi:ApiKey
+      - source: PricingApi__ApiKey
+        target: PricingApi:ApiKey
+      - source: ProductsApi__ApiKey
+        target: ProductsApi:ApiKey
+      - source: ForecastApi__ApiKey
+        target: ForecastApi:ApiKey
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
-      Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-true}"
-      Security__AccessTokenLifetimeMinutes: "60"
+      Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-false}"
+      Security__AccessTokenLifetimeMinutes: "15"
       Security__RefreshTokenLifetimeMinutes: "43200"
       ShopAuth__JwtIssuer: "GbaShop"
       ShopAuth__JwtAudience: "GbaShop"
@@ -33,26 +51,29 @@ services:
       GBA_CRM_SERVER_URL: "https://gba-api-dev.85.17.167.167.nip.io"
       GBA_ECOMMERCE_CLIENT_URL: "https://shop-dev.85.17.167.167.nip.io"
       RecommendationApi__Url: "http://host.docker.internal:8000"
-      RecommendationApi__ApiKey: "reco_dev_internal_a463145706c67aa1"
       RecommendationApi__TimeoutSeconds: "120"
       GbaNbaApi__Url: "http://host.docker.internal:8002"
-      GbaNbaApi__ApiKey: "nba_dev_internal_8f3c1a9e6b2d4f70"
       GbaNbaApi__TimeoutSeconds: "120"
       ProcurementApi__Url: "http://host.docker.internal:8001"
-      ProcurementApi__ApiKey: "procure_dev_internal_256b79d05d690ef9"
       ProcurementApi__TimeoutSeconds: "120"
       SolvencyApi__Url: "http://host.docker.internal:8003"
-      SolvencyApi__ApiKey: "solvency_dev_internal_2f57866cba8cf297"
       PricingApi__Url: "http://host.docker.internal:8004"
-      PricingApi__ApiKey: "pricing_dev_internal_e748d1d1b8488d5f"
       PricingApi__TimeoutSeconds: "240"
       ProductsApi__Url: "http://host.docker.internal:8005"
-      ProductsApi__ApiKey: "products_dev_internal_afd06ae3637fbac9"
       ProductsApi__TimeoutSeconds: "60"
       ForecastApi__Url: "http://host.docker.internal:8006"
-      ForecastApi__ApiKey: "forecast_dev_internal_4cb9bb0ca529076d"
       ForecastApi__TimeoutSeconds: "30"
       GBA_DATASYNC_ALLOW_OUTCOME_SETTLEMENT_BACKFILL: "true"
+      GBA_ALLOW_FIXED_HISTORICAL_STOCK_TRANSITION: "1"
+      DataSync__ImportedDocumentResponsibleUserNetUid: "37E979EB-A58D-4BEB-994B-121B119844ED"
+      DataSync__ImportedDocumentUnmatchedResponsibleUserNetUid: "123E9F21-D726-49CB-BAD9-ECDEDC0E4D3F"
+      DataSync__FenixClientCataloguePageSize: "512"
+      DataSync__FenixReturnItemCaptureBatchSize: "64"
+      GBA_LIBREOFFICE_POOL_ENABLED: "true"
+      GBA_DOCUMENT_CONVERSION_TIMINGS: "true"
+      GbaNbaApi__SourceEnvironment: "dev"
+      ProductsApi__SourceEnvironment: "dev"
+      DataSync__HistoricalDocumentUnits__AdmissionsJson: '[{"ForAmg":false,"ConnectionDataSource":"85.17.167.168,1433","SqlServerName":"1C-NEW","ConfigurationId":"1e4190e9-76c2-456e-a607-4d817110ffd9","SourceSealSha256":"2DC4518D5E9AF76ECDE45800D90C31FD3D78415DC3F644688CF06629FA2CCE65","SourceSchemaSha256":"1D07A98ADED2CB59359336778DF4A257A6D503781539C53228FA8AC311E1E413","SaleMetadataSha256":"42499C6B9E0D832E29C1D6AA8D20929F89691B86CB9C20AFFCB1CFC2B82CDC61","SaleSchemaSha256":"EC0B522D9DB80F38A8F1465C93D64A20E85D72E39F17AC76697445A30BF500D4","ReturnMetadataSha256":"59F07742BF9695220DE234D7705FED84F16064ACE8F6C3CD7C2D1454DC4E7398","ReturnSchemaSha256":"9F42BCBF0E1E26732FFB48446F234FFBAF57C195C1A59D3EAC2C5503913608C1"},{"ForAmg":true,"ConnectionDataSource":"85.17.167.168,1433","SqlServerName":"1C-NEW","ConfigurationId":"1e4190e9-76c2-456e-a607-4d817110ffd9","SourceSealSha256":"EDABB70744634E5D87E4FFFF7FEE20C44850843BA50CA4CAE95ADEDD18E8AF16","SourceSchemaSha256":"BFC795085DEF16C34AA3BF23524E331AD7C058EBB3D809005F706B2324560AC5","SaleMetadataSha256":"6B300E77B4C79507C1BF181E6C0B5A08B391D1146FB1F49C78E71097143DEE5C","SaleSchemaSha256":"CCBBAD95F0BF20C0BBD8B16BE465BF6AFFE7ED6650444466675592804877065B","ReturnMetadataSha256":"59F07742BF9695220DE234D7705FED84F16064ACE8F6C3CD7C2D1454DC4E7398","ReturnSchemaSha256":"E3653862A30A24A4BE66CF9DE315D821B4051F4908172AE45B7B228EE5EA1742"}]'
       Security__CorsOrigins__0: "http://localhost:3000"
       Security__CorsOrigins__1: "http://localhost:7000"
       Security__CorsOrigins__2: "http://localhost:8081"
@@ -77,8 +98,15 @@ services:
       - ../gba-server/src/Global.Business.Assistant.Api/Images:/app/Images
       - ../gba-server/src/Global.Business.Assistant.Api/Logs:/app/Logs
       - aspnet-dataprotection-keys-dev:/root/.aspnet/DataProtection-Keys
+      - /private/bug1274-settlement-source-paced.lock:/private/bug1274-settlement-source-paced.lock
+      - /private/gba-fenix-separate-plan-reader-20260929:/private/gba-fenix-separate-plan-reader-20260929:ro
+      - /private/gba-debtor41-graph-two-page-io-v2-20260930/full-admission-20260930:/private/gba-debtor41-graph-two-page-io-v2-20260930/full-admission-20260930:ro
+      - /private/gba-price28-normal-sync-state-20261001:/private/gba-price28-normal-sync-state-20261001
+      - /root/.private/gba-constructor-capture/agreement-price-full-capture-20260919-ro2:/root/.private/gba-constructor-capture/agreement-price-full-capture-20260919-ro2:ro
+      - /private/gba-discount23-25-normal-sync-state-20261001:/private/gba-discount23-25-normal-sync-state-20261001
     ports:
-      - "35981:35981"
+      - "127.0.0.1:35981:35981"
+      - "${GBA_DOCKER_HOST_GATEWAY_IP:-172.17.0.1}:35981:35981"
     restart: unless-stopped
 
   data-analytics:
@@ -86,7 +114,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
-      Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-true}"
+      Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-false}"
       ShopAuth__JwtIssuer: "GbaShop"
       ShopAuth__JwtAudience: "GbaShop"
       ShopAuth__AcceptLegacySharedTokens: "false"
@@ -110,7 +138,8 @@ services:
       Security__CorsOrigins__17: "http://gba-console-dev.85.17.167.167.nip.io"
       Security__CorsOrigins__18: "https://gba-console-dev.85.17.167.167.nip.io"
     ports:
-      - "35982:35982"
+      - "127.0.0.1:35982:35982"
+      - "${GBA_DOCKER_HOST_GATEWAY_IP:-172.17.0.1}:35982:35982"
     volumes:
       - aspnet-dataprotection-keys-dev:/root/.aspnet/DataProtection-Keys
     secrets:
@@ -139,7 +168,8 @@ services:
       Security__CorsOrigins__11: "https://shop-dev.85.17.167.167.nip.io"
       Security__CorsOrigins__12: "https://gba-dev.85.17.167.167.nip.io"
     ports:
-      - "62506:62506"
+      - "127.0.0.1:62506:62506"
+      - "${GBA_DOCKER_HOST_GATEWAY_IP:-172.17.0.1}:62506:62506"
     restart: unless-stopped
 
   gba-client:
@@ -147,7 +177,8 @@ services:
       SERVER_URL: "https://gba-api-dev.85.17.167.167.nip.io/"
       SERVER_URL_V2: "https://gba-analytics-dev.85.17.167.167.nip.io/"
     ports:
-      - "8082:80"
+      - "127.0.0.1:8082:80"
+      - "${GBA_DOCKER_HOST_GATEWAY_IP:-172.17.0.1}:8082:80"
     restart: unless-stopped
 
   gba-console:
@@ -165,7 +196,8 @@ services:
       API_QA_PROXY_TARGET: "http://data-concord-qa:35981"
       API_QA_HISTORY_PROXY_TARGET: "http://data-analytics-qa:35982"
     ports:
-      - "8083:80"
+      - "127.0.0.1:8083:80"
+      - "${GBA_DOCKER_HOST_GATEWAY_IP:-172.17.0.1}:8083:80"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/build.json || exit 1"]
@@ -209,6 +241,8 @@ services:
       NEXT_PUBLIC_SITE_URL: "https://shop-dev.85.17.167.167.nip.io"
       NEXT_PUBLIC_BASE_URL: "https://shop-dev.85.17.167.167.nip.io"
       NEXT_PUBLIC_STATIC_BASE_URL: "https://gba-api-dev.85.17.167.167.nip.io"
+      # Guests may decode only the retail price selected by the ecommerce API.
+      PRICE_VISIBILITY: "public"
       IMAGE_SEARCH_MODEL: "claude-sonnet-5"
     secrets:
       - source: ShopAuth__JwtKey
@@ -231,7 +265,8 @@ services:
         export ANTHROPIC_API_KEY="$$(cat /run/secrets/AnthropicApiKey)"
         exec node server.js
     ports:
-      - "8081:3000"
+      - "127.0.0.1:8081:3000"
+      - "${GBA_DOCKER_HOST_GATEWAY_IP:-172.17.0.1}:8081:3000"
     restart: unless-stopped
 
 secrets:
@@ -248,9 +283,13 @@ secrets:
   ConnectionStrings__RemoteIdentityConnectionString:
     file: ./secrets/dev/ConnectionStrings__RemoteIdentityConnectionString
   ConnectionStrings__FenixOneCConnectionString:
-    file: ./secrets/dev/ConnectionStrings__FenixOneCConnectionString
+    file: /private/gba-dev-full-reset-20261007/fenix-readonly.connection
   ConnectionStrings__AmgOneCConnectionString:
-    file: ./secrets/dev/ConnectionStrings__AmgOneCConnectionString
+    file: /private/gba-dev-full-reset-20261007/amg-readonly.connection
+  ConnectionStrings__FenixOneCReadOnlyConnectionString:
+    file: /private/gba-dev-full-reset-20261007/fenix-readonly.connection
+  ConnectionStrings__AmgOneCReadOnlyConnectionString:
+    file: /private/gba-dev-full-reset-20261007/amg-readonly.connection
   Security__JwtKey:
     file: ./secrets/dev/Security__JwtKey
   Security__JwtPrivateKey:
@@ -275,6 +314,20 @@ secrets:
     file: ./secrets/dev/Storefront__PriceTokenSecret
   ProcureCostInternalAuth__ApiKey:
     file: ./secrets/dev/ProcureCostInternalAuth__ApiKey
+  RecommendationApi__ApiKey:
+    file: ./secrets/dev/RecommendationApi__ApiKey
+  ProcurementApi__ApiKey:
+    file: ./secrets/dev/ProcurementApi__ApiKey
+  GbaNbaApi__ApiKey:
+    file: ./secrets/dev/GbaNbaApi__ApiKey
+  SolvencyApi__ApiKey:
+    file: ./secrets/dev/SolvencyApi__ApiKey
+  PricingApi__ApiKey:
+    file: ./secrets/dev/PricingApi__ApiKey
+  ProductsApi__ApiKey:
+    file: ./secrets/dev/ProductsApi__ApiKey
+  ForecastApi__ApiKey:
+    file: ./secrets/dev/ForecastApi__ApiKey
 
 volumes:
   mssql-data:

@@ -22,3 +22,9 @@ gba-server signs its access tokens with RS256. `scripts/local-dev.sh init` gener
 Only data-concord mounts `Security__JwtPrivateKey`. data-analytics and the shop
 API mount `Security__JwtPublicKey`. `ShopAuth__JwtKey` is the shop's own HS256
 key (at least 32 random bytes, different from `Security__JwtKey`).
+
+The seven `*Api__ApiKey` files authenticate `data-concord` to the host-run AI
+fleet. Each value must match that service's ignored `.env` `INTERNAL_API_KEY`.
+The E2E stand intentionally mounts these same DEV keys because it calls the
+same DEV AI endpoints. Rotate every value that has ever appeared in Git before
+redeploying either client or service.
