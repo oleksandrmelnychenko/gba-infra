@@ -74,6 +74,7 @@ services:
       GBA_DOCUMENT_CONVERSION_TIMINGS: "true"
       GbaNbaApi__SourceEnvironment: "dev"
       ProductsApi__SourceEnvironment: "dev"
+      GBA_AI_FLEET_STATE_DIRECTORY: "/app/AiFleet"
       DataSync__HistoricalDocumentUnits__AdmissionsJson: '[{"ForAmg":false,"ConnectionDataSource":"85.17.167.168,1433","SqlServerName":"1C-NEW","ConfigurationId":"1e4190e9-76c2-456e-a607-4d817110ffd9","SourceSealSha256":"2DC4518D5E9AF76ECDE45800D90C31FD3D78415DC3F644688CF06629FA2CCE65","SourceSchemaSha256":"1D07A98ADED2CB59359336778DF4A257A6D503781539C53228FA8AC311E1E413","SaleMetadataSha256":"42499C6B9E0D832E29C1D6AA8D20929F89691B86CB9C20AFFCB1CFC2B82CDC61","SaleSchemaSha256":"EC0B522D9DB80F38A8F1465C93D64A20E85D72E39F17AC76697445A30BF500D4","ReturnMetadataSha256":"59F07742BF9695220DE234D7705FED84F16064ACE8F6C3CD7C2D1454DC4E7398","ReturnSchemaSha256":"9F42BCBF0E1E26732FFB48446F234FFBAF57C195C1A59D3EAC2C5503913608C1"},{"ForAmg":true,"ConnectionDataSource":"85.17.167.168,1433","SqlServerName":"1C-NEW","ConfigurationId":"1e4190e9-76c2-456e-a607-4d817110ffd9","SourceSealSha256":"EDABB70744634E5D87E4FFFF7FEE20C44850843BA50CA4CAE95ADEDD18E8AF16","SourceSchemaSha256":"BFC795085DEF16C34AA3BF23524E331AD7C058EBB3D809005F706B2324560AC5","SaleMetadataSha256":"6B300E77B4C79507C1BF181E6C0B5A08B391D1146FB1F49C78E71097143DEE5C","SaleSchemaSha256":"CCBBAD95F0BF20C0BBD8B16BE465BF6AFFE7ED6650444466675592804877065B","ReturnMetadataSha256":"59F07742BF9695220DE234D7705FED84F16064ACE8F6C3CD7C2D1454DC4E7398","ReturnSchemaSha256":"E3653862A30A24A4BE66CF9DE315D821B4051F4908172AE45B7B228EE5EA1742"}]'
       Security__CorsOrigins__0: "http://localhost:3000"
       Security__CorsOrigins__1: "http://localhost:7000"
@@ -99,6 +100,8 @@ services:
       - ../gba-server/src/Global.Business.Assistant.Api/Images:/app/Images
       - ../gba-server/src/Global.Business.Assistant.Api/Logs:/app/Logs
       - aspnet-dataprotection-keys-dev:/root/.aspnet/DataProtection-Keys
+      - /var/lib/gba-ai-fleet:/app/AiFleet:ro
+      - /var/lib/gba-ai-fleet/requests:/app/AiFleet/requests:rw
       - /private/bug1274-settlement-source-paced.lock:/private/bug1274-settlement-source-paced.lock
       - /private/gba-fenix-separate-plan-reader-20260929:/private/gba-fenix-separate-plan-reader-20260929:ro
       - /private/gba-debtor41-graph-two-page-io-v2-20260930/full-admission-20260930:/private/gba-debtor41-graph-two-page-io-v2-20260930/full-admission-20260930:ro

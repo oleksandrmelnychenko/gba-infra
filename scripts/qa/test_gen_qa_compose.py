@@ -56,6 +56,17 @@ class ProductHistoryQaTests(unittest.TestCase):
         self.assertEqual('qa', api['GbaNbaApi__SourceEnvironment'])
         self.assertNotIn('GbaNbaApi__Key', api)
 
+    def test_dev_ai_fleet_state_is_not_carried_to_qa(self):
+        source = self.dev['services']['data-concord']
+        source['environment']['GBA_AI_FLEET_STATE_DIRECTORY'] = '/app/AiFleet'
+        source.setdefault('volumes', []).extend([
+            {'type': 'bind', 'source': '/var/lib/gba-ai-fleet', 'target': '/app/AiFleet', 'read_only': True},
+            {'type': 'bind', 'source': '/var/lib/gba-ai-fleet/requests', 'target': '/app/AiFleet/requests'},
+        ])
+        api = self.generate()['services']['data-concord-qa']
+        self.assertNotIn('GBA_AI_FLEET_STATE_DIRECTORY', api['environment'])
+        self.assertFalse([volume for volume in api['volumes'] if 'AiFleet' in volume['target']])
+
     def test_nba_refresh_refuses_silent_shared_dev_fallback(self):
         self.dev['services']['data-concord']['environment']['GbaNbaApi__Url'] = 'http://host.docker.internal:8002'
         with self.assertRaisesRegex(SystemExit, 'isolated QA NBA'):

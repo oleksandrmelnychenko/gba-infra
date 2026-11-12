@@ -79,6 +79,7 @@ def qa_environment(environment: dict, service: str) -> dict:
         if key.startswith('GBA_DATASYNC_') or key.endswith('_LOAD_GUARD'):
             value = 'false'
         result[key] = value
+    result.pop('GBA_AI_FLEET_STATE_DIRECTORY', None)
     result.update(FORCED_ENVIRONMENT)
     result.update(qa_conversion_flags(service, environment))
     if service == 'data-concord':
