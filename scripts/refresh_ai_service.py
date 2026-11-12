@@ -154,13 +154,55 @@ def refresh(stage: str, as_of: str, token: str) -> dict:
     return result
 
 
+def check(stage: str) -> dict:
+    """Import what the stage needs and confirm the stores answer. Writes nothing."""
+    import app
+    report = {"stage": stage, "app": str(Path(app.__file__).resolve().parent)}
+    if stage in ("nba_feedback", "nba"):
+        from app.services.worker import push_reco_feedback, run  # noqa: F401
+        return report
+    from app.data import cache
+    report["cache"] = bool(cache.health())
+    if stage == "reco":
+        from app.services.recommendations.worker import run  # noqa: F401
+    elif stage == "procure":
+        from app.services.replenishment import worker
+        worker.run
+    elif stage == "products":
+        from app.api import main
+        main._build_and_cache_portfolio, main._build_and_cache_stock, cache.make_key
+    elif stage == "solvency":
+        from app.core.config import get_settings
+        from app.services.solvency import service
+        from app.data.db import query  # noqa: F401
+        get_settings().window_months, service.score_batch
+    elif stage == "forecast":
+        from app.api.main import forecast_sales  # noqa: F401
+        from app.data.db import query  # noqa: F401
+    elif stage == "pricing":
+        from app.services.pricing.service import recommend_price  # noqa: F401
+        from app.data import pricing_repository as repo
+        repo.resolve_product, repo.resolve_client_agreement, cache._get_client
+    else:
+        raise ValueError(stage)
+    if not report["cache"]:
+        raise RuntimeError("Redis unavailable; refresh cannot be persisted")
+    return report
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("stage")
-    parser.add_argument("--as-of", required=True)
-    parser.add_argument("--token", required=True)
-    parser.add_argument("--result", required=True, type=Path)
+    parser.add_argument("--check", action="store_true")
+    parser.add_argument("--as-of")
+    parser.add_argument("--token")
+    parser.add_argument("--result", type=Path)
     args = parser.parse_args()
     sys.path.insert(0, str(Path.cwd()))
+    if args.check:
+        print(json.dumps(check(args.stage)))
+        sys.exit(0)
+    if not (args.as_of and args.token and args.result):
+        parser.error("--as-of, --token and --result are required")
     result = refresh(args.stage, args.as_of, args.token)
     args.result.write_text(json.dumps({"status": "complete", **result}, indent=2, default=str) + "\n")
