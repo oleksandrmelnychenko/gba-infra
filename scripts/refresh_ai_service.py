@@ -103,6 +103,9 @@ def refresh(stage: str, as_of: str, token: str) -> dict:
         from app.api import main
         portfolio = main._build_and_cache_portfolio(cache.make_key("assortment", "portfolio", as_of), as_of)
         main._build_and_cache_stock(as_of)
+        if hasattr(main, "_build_and_cache_product_facts"):
+            main._build_and_cache_product_facts(as_of)
+            result["product_facts"] = True
         result["products"] = portfolio.get("count")
     elif stage == "solvency":
         from app.core.config import get_settings
@@ -119,13 +122,9 @@ def refresh(stage: str, as_of: str, token: str) -> dict:
             count += len(scores)
         result["clients"] = count
     elif stage == "forecast":
-        from app.api.main import forecast_sales
-        clients = active_clients(as_of)
-        for i, client in enumerate(clients, 1):
-            forecast_sales(client_net_id=UUID(client["uid"]), months=None, use_cache=True)
-            if i % 50 == 0:
-                print(f"forecast clients {i}/{len(clients)}", flush=True)
-        result["clients"] = len(clients)
+        from app.services.forecasting import accuracy_gate
+        result["accuracy_gate"] = accuracy_gate.run(as_of)
+        result["clients"] = 0
     elif stage == "pricing":
         from app.services.pricing.service import recommend_price
         from app.data import pricing_repository as repo
@@ -177,7 +176,7 @@ def check(stage: str) -> dict:
         from app.data.db import query  # noqa: F401
         get_settings().window_months, service.score_batch
     elif stage == "forecast":
-        from app.api.main import forecast_sales  # noqa: F401
+        from app.services.forecasting import accuracy_gate  # noqa: F401
         from app.data.db import query  # noqa: F401
     elif stage == "pricing":
         from app.services.pricing.service import recommend_price  # noqa: F401
