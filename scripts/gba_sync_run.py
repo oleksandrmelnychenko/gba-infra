@@ -116,7 +116,6 @@ class Runner:
         try:
             result = self.call(self.args.shop_api, "/api/v1/uk/elasticsearch/sync/full", {},
                                method="POST", timeout=3600).get("Body") or {}
-            health = self.call(self.args.shop_api, "/api/v1/uk/elasticsearch/health").get("Body") or {}
         except urllib.error.HTTPError as exc:
             self.log(step="search", ok=False, http=exc.code,
                      body=exc.read().decode(errors="replace")[:1500])
@@ -124,10 +123,23 @@ class Runner:
         except Exception as exc:
             self.log(step="search", ok=False, error=str(exc))
             return False
-        raw = str(health.get("lastSyncUtc") or "")
-        synced = datetime.fromisoformat(raw[:19]).replace(tzinfo=timezone.utc) if raw else None
-        ok = bool(result.get("success", result.get("Success"))) and bool(health.get("healthy")) \
-            and not health.get("stale") and synced is not None and synced >= started.replace(microsecond=0)
+        health: dict = {}
+        current = False
+        deadline = time.time() + 300
+        while not current and time.time() < deadline:
+            try:
+                health = self.call(self.args.shop_api, "/api/v1/uk/elasticsearch/health").get("Body") or {}
+            except urllib.error.HTTPError as exc:
+                health = (json.loads(exc.read().decode(errors="replace") or "{}").get("Body") or {})
+            except Exception as exc:
+                health = {"error": str(exc)}
+            raw = str(health.get("lastSyncUtc") or "")
+            synced = datetime.fromisoformat(raw[:19]).replace(tzinfo=timezone.utc) if raw else None
+            current = bool(health.get("healthy")) and not health.get("stale") \
+                and synced is not None and synced >= started.replace(microsecond=0)
+            if not current:
+                time.sleep(15)
+        ok = bool(result.get("success", result.get("Success"))) and current
         self.log(step="search", ok=ok, seconds=round(time.time() - clock), result=result, health=health)
         return ok
 
