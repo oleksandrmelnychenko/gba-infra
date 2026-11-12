@@ -4,6 +4,7 @@
 light  AMG and Fenix daily sessions only. Nothing downstream is refreshed.
 full   The same sessions, then a full rebuild of the shop search index and a
        forced AI fleet refresh, each confirmed before the run is reported done.
+refresh  Only the search rebuild and the AI fleet refresh, without sessions.
 
 The same entry point serves the timer and manual runs. flock prevents overlap.
 """
@@ -162,9 +163,9 @@ class Runner:
                 return 3
             self.log(step="start", window=[self.args.date_from, self.args.date_to] if self.args.date_from
                      else "server daily lookback")
-            ok = all(self.session(for_amg) for for_amg in (True, False))
+            ok = self.args.mode == "refresh" or all(self.session(for_amg) for for_amg in (True, False))
             downstream: dict[str, bool] = {}
-            if ok and self.args.mode == "full":
+            if ok and self.args.mode in ("full", "refresh"):
                 downstream["search"] = self.rebuild_search()
                 downstream["ai"] = self.refresh_ai()
             done = ok and all(downstream.values())
@@ -178,7 +179,7 @@ class Runner:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("light", "full"), required=True)
+    parser.add_argument("--mode", choices=("light", "full", "refresh"), required=True)
     parser.add_argument("--from", dest="date_from", default="")
     parser.add_argument("--to", dest="date_to", default="")
     parser.add_argument("--server", default="http://127.0.0.1:35981")
