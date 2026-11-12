@@ -64,8 +64,8 @@ class AiFirewallTests(unittest.TestCase):
 
         calls = self.log.read_text(encoding="utf-8")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertIn("iptables -I INPUT 1 -i eth-test -p tcp --dport 8000:8006 -j DROP", calls)
-        self.assertIn("ip6tables -I INPUT 1 -i eth-test -p tcp --dport 8000:8006 -j DROP", calls)
+        self.assertIn("iptables -I INPUT 1 -i eth-test -p tcp -m multiport --dports 8000:8006,8012,8015 -j DROP", calls)
+        self.assertIn("ip6tables -I INPUT 1 -i eth-test -p tcp -m multiport --dports 8000:8006,8012,8015 -j DROP", calls)
 
     def test_verifier_fails_when_drop_rule_is_missing(self):
         result = subprocess.run(
@@ -81,10 +81,10 @@ class AiFirewallTests(unittest.TestCase):
 
     def test_verifier_accepts_only_first_position_drop_rules(self):
         self.env["IPV4_RULES"] = (
-            "-A INPUT -i eth-test -p tcp -m tcp --dport 8000:8006 -j DROP"
+            "-A INPUT -i eth-test -p tcp -m multiport --dports 8000:8006,8012,8015 -j DROP"
         )
         self.env["IPV6_RULES"] = (
-            "-A INPUT -i eth-test -p tcp -m tcp --dport 8000:8006 -j DROP"
+            "-A INPUT -i eth-test -p tcp -m multiport --dports 8000:8006,8012,8015 -j DROP"
         )
 
         result = subprocess.run(
@@ -100,7 +100,7 @@ class AiFirewallTests(unittest.TestCase):
     def test_verifier_rejects_drop_rule_shadowed_by_accept(self):
         self.env["IPV4_RULES"] = "\n".join((
             "-A INPUT -i eth-test -p tcp -j ACCEPT",
-            "-A INPUT -i eth-test -p tcp -m tcp --dport 8000:8006 -j DROP",
+            "-A INPUT -i eth-test -p tcp -m multiport --dports 8000:8006,8012,8015 -j DROP",
         ))
 
         result = subprocess.run(
@@ -113,6 +113,62 @@ class AiFirewallTests(unittest.TestCase):
 
         self.assertNotEqual(0, result.returncode)
         self.assertIn("missing or shadowed", result.stderr)
+
+    def test_verifier_rejects_legacy_rule_without_qa_twin_ports(self):
+        legacy = "-A INPUT -i eth-test -p tcp -m tcp --dport 8000:8006 -j DROP"
+        self.env["IPV4_RULES"] = legacy
+        self.env["IPV6_RULES"] = legacy
+
+        result = subprocess.run(
+            (str(VERIFY), "eth-test"),
+            check=False,
+            capture_output=True,
+            env=self.env,
+            text=True,
+        )
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("missing or shadowed", result.stderr)
+
+    def test_hardening_removes_legacy_rule_only_after_new_rule_is_in_place(self):
+        (self.fake_bin / "iptables").write_text(
+            "#!/bin/sh\n"
+            "printf 'iptables %s\\n' \"$*\" >> \"$FIREWALL_LOG\"\n"
+            "case \"$*\" in\n"
+            "  '-C INPUT -i eth-test -p tcp --dport 8000:8006 -j DROP')\n"
+            "    [ ! -e \"$FIREWALL_LOG.legacy-removed\" ]; exit $? ;;\n"
+            "  '-D INPUT -i eth-test -p tcp --dport 8000:8006 -j DROP')\n"
+            "    : > \"$FIREWALL_LOG.legacy-removed\"; exit 0 ;;\n"
+            "esac\n"
+            "[ \"${1:-}\" != -C ]\n",
+            encoding="utf-8",
+        )
+
+        result = subprocess.run(
+            (str(HARDEN), "eth-test"),
+            check=False,
+            capture_output=True,
+            env=self.env,
+            text=True,
+        )
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        calls = [
+            line for line in self.log.read_text(encoding="utf-8").splitlines()
+            if line.startswith("iptables ") and " INPUT " in line
+        ]
+        insert = calls.index(
+            "iptables -I INPUT 1 -i eth-test -p tcp -m multiport "
+            "--dports 8000:8006,8012,8015 -j DROP"
+        )
+        delete = calls.index("iptables -D INPUT -i eth-test -p tcp --dport 8000:8006 -j DROP")
+        self.assertLess(insert, delete)
+
+    def test_scripts_share_one_port_list(self):
+        for script in (HARDEN, VERIFY):
+            self.assertIn(
+                "ai_ports='8000:8006,8012,8015'", script.read_text(encoding="utf-8")
+            )
 
     def test_persistent_unit_runs_hardening_and_verification(self):
         unit = (ROOT / "systemd" / "gba-docker-firewall.service").read_text(
@@ -141,7 +197,7 @@ class AiFirewallTests(unittest.TestCase):
     def test_verifier_fails_closed_when_ipv6_tool_is_unavailable(self):
         (self.fake_bin / "ip6tables").unlink()
         self.env["IPV4_RULES"] = (
-            "-A INPUT -i eth-test -p tcp -m tcp --dport 8000:8006 -j DROP"
+            "-A INPUT -i eth-test -p tcp -m multiport --dports 8000:8006,8012,8015 -j DROP"
         )
 
         result = subprocess.run(

@@ -173,8 +173,10 @@ To re-apply Docker's host firewall guardrail:
 
 It adds idempotent `DOCKER-USER` rules that allow only `80/443` from the
 public interface into Docker-published services.
-It also blocks host-run AI ports `8000..8006` on the public interface for IPv4
-and IPv6. Install the checked-in unit so the policy is restored after reboot:
+It also blocks host-run AI ports `8000..8006` and the QA twins `8012` (NBA)
+and `8015` (products) on the public interface for IPv4 and IPv6. The QA twins
+must keep listening on the Docker bridge gateway because `data-concord-qa`
+reaches them through `host.docker.internal`. Install the checked-in unit so the policy is restored after reboot:
 
 ```bash
 sudo install -m 0644 systemd/gba-docker-firewall.service /etc/systemd/system/
