@@ -1,0 +1,11 @@
+[Unit]
+Description=Check the GBA AI web services every two minutes
+
+[Timer]
+OnCalendar=*:0/2
+AccuracySec=1s
+RandomizedDelaySec=0
+Unit=gba-ai-watchdog.service
+
+[Install]
+WantedBy=timers.target

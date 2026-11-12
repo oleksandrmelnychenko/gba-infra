@@ -1,0 +1,10 @@
+[Unit]
+Description=GBA AI fleet watchdog: start enabled web services that are down
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/projects/gba-infra
+ExecStart=/usr/bin/python3 /root/projects/gba-infra/scripts/ai_fleet_watchdog.py
+TimeoutStartSec=5min
+UMask=0077
