@@ -1,0 +1,15 @@
+[Unit]
+Description=GBA Console nightly E2E suite (gba-e2e stand)
+After=network-online.target docker.service
+After=gba-sync@light.service gba-sync@full.service gba-sync@refresh.service
+After=gba-sql-statistics@dev.service gba-ai-fleet-refresh.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/projects/gba-infra
+EnvironmentFile=-/etc/gba-e2e.env
+Environment=CONSOLE_ROOT=/root/projects/gba_console
+ExecStart=/root/projects/gba-infra/scripts/e2e/run-e2e.sh full
+TimeoutStartSec=3h
+Nice=10

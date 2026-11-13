@@ -40,7 +40,7 @@ docker compose -p gba-e2e -f docker-compose.e2e.yml --env-file .env.e2e up -d --
 
 ## Nightly
 
-`gba-e2e-nightly.service` + `.timer` (02:30, до parity-cron о 05:30). Увімкнути після стабілізації сюїти:
+`gba-e2e-nightly.service` + `.timer` (06:15 Київ, після нічної синхронізації 1С, статистики та AI-циклу; юніти в `systemd/`, розклад ночі — `docs/sync-nightly.md`). Увімкнути після стабілізації сюїти:
 
 ```bash
 systemctl daemon-reload && systemctl enable --now gba-e2e-nightly.timer

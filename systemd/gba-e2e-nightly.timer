@@ -1,0 +1,10 @@
+[Unit]
+Description=Run GBA Console E2E full suite every morning at 06:15 Kyiv, after the 1C sync and the AI cycle
+
+[Timer]
+OnCalendar=*-*-* 06:15:00 Europe/Kyiv
+RandomizedDelaySec=300
+Persistent=false
+
+[Install]
+WantedBy=timers.target
