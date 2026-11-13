@@ -15,12 +15,17 @@ class FakeSystemd:
         self.enabled = {name: "enabled" for name in health.SERVICES} | (enabled or {})
         self.start_works = start_works
         self.commands = []
+        self.unhealthy = set()
 
     def __call__(self, *args, timeout=90):
         self.commands.append(args)
         name = args[1].removeprefix("gba-").removesuffix(".service")
         if args[0] == "is-active":
-            return (0 if self.active[name] == "active" else 3), self.active[name]
+            state = self.active.get(name, "inactive")
+            return (0 if state == "active" else 3), state
+        if args[0] == "restart":
+            self.unhealthy.discard(name)
+            return 0, ""
         if args[0] == "is-enabled":
             return (0 if self.enabled[name] == "enabled" else 1), self.enabled[name]
         if args[0] == "start":
@@ -38,6 +43,8 @@ class FakeSystemd:
         name = next(key for key, value in health.SERVICES.items() if value == port)
         if self.active[name] != "active":
             raise ConnectionRefusedError("connection refused")
+        if name in self.unhealthy:
+            raise TimeoutError("timed out")
         return 200, json.dumps({"status": "healthy", "business_ready": True}).encode()
 
 
@@ -174,3 +181,29 @@ def test_watchdog_reports_a_failed_start(tmp_path):
         report = watchdog.patrol(tmp_path)
     assert report["actions"][0]["action"] == "start failed (exit 1)"
     assert "Job for unit failed" in report["actions"][0]["error"]
+
+
+def test_watchdog_restarts_a_unit_unhealthy_three_checks_in_a_row(tmp_path):
+    systemd = FakeSystemd()
+    systemd.unhealthy.add("procure")
+    with fake(systemd):
+        for _ in range(2):
+            report = watchdog.patrol(tmp_path)
+            watchdog.record(tmp_path, report)
+            assert report["actions"] == []
+        report = watchdog.patrol(tmp_path)
+        watchdog.record(tmp_path, report)
+        assert [(a["service"], a["action"]) for a in report["actions"]] == [("procure", "restarted")]
+        assert watchdog.patrol(tmp_path)["actions"] == []
+    assert [args[1] for args in systemd.commands if args[0] == "restart"] == ["gba-procure.service"]
+
+
+def test_watchdog_does_not_restart_during_fleet_refresh_or_maintenance(tmp_path):
+    systemd = FakeSystemd(active={"ai-fleet-refresh": "active"})
+    systemd.unhealthy.add("procure")
+    with fake(systemd):
+        for _ in range(4):
+            report = watchdog.patrol(tmp_path)
+            watchdog.record(tmp_path, report)
+    assert report["actions"] == []
+    assert report["services"]["procure"]["unhealthy_checks"] == 4

@@ -7,7 +7,9 @@ masked unit is left alone. While the maintenance marker
 /var/lib/gba-ai-fleet/maintenance exists nothing is started; its age is logged
 on every run and a warning is logged once it is older than six hours, so a
 forgotten marker stays visible. The /health body of every active unit is
-recorded and an unhealthy one is logged; it is not restarted here.
+recorded and an unhealthy one is logged. A unit that is active but unhealthy
+on three checks in a row is restarted, unless the marker exists or the fleet
+refresh is running.
 
 The last check and the last fifty actions are kept in
 /var/lib/gba-ai-fleet/watchdog.json. --dry-run reports what would be started
@@ -24,10 +26,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ai_fleet_health as health
 
 HISTORY = 50
+UNHEALTHY_LIMIT = 3
+
+
+def previous_streaks(state_dir: Path) -> dict[str, int]:
+    try:
+        services = json.loads((state_dir / "watchdog.json").read_text()).get("services", {})
+    except (OSError, ValueError):
+        return {}
+    return {name: int(entry.get("unhealthy_checks", 0)) for name, entry in services.items() if isinstance(entry, dict)}
 
 
 def patrol(state_dir: Path, *, dry_run: bool = False, marker: Path | None = None) -> dict:
     marker = marker or state_dir / "maintenance"
+    streaks = previous_streaks(state_dir)
+    refreshing = health.systemctl("is-active", "gba-ai-fleet-refresh.service")[1].strip() in ("active", "activating")
     marker_state = health.maintenance(marker)
     checked_at = health.now_iso()
     services: dict[str, dict] = {}
@@ -44,7 +57,23 @@ def patrol(state_dir: Path, *, dry_run: bool = False, marker: Path | None = None
                 entry["healthy"] = verdict["healthy"]
                 if not verdict["healthy"]:
                     entry["reason"] = verdict.get("reason")
-                    print(f"WARNING gba-{name} is active but not healthy: {verdict.get('reason')}", flush=True)
+                    entry["unhealthy_checks"] = streaks.get(name, 0) + 1
+                    print(f"WARNING gba-{name} is active but not healthy ({entry['unhealthy_checks']} in a row): "
+                          f"{verdict.get('reason')}", flush=True)
+                    if entry["unhealthy_checks"] >= UNHEALTHY_LIMIT and not marker_state["present"] and not refreshing:
+                        if dry_run:
+                            entry["action"] = "would restart"
+                        else:
+                            code, output = health.systemctl("restart", health.unit(name))
+                            entry["action"] = "restarted" if code == 0 else f"restart failed (exit {code})"
+                            entry["unhealthy_checks"] = 0
+                            action = {"at": checked_at, "service": name, "was": "active, unhealthy",
+                                      "action": entry["action"]}
+                            if code:
+                                action["error"] = output[:300]
+                            actions.append(action)
+                            print(f"gba-{name} was unhealthy on {UNHEALTHY_LIMIT} checks; systemctl restart exit {code}",
+                                  flush=True)
         elif not enabled:
             entry["action"] = "none (unit is not enabled)"
         elif marker_state["present"]:
@@ -98,7 +127,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report, indent=2, ensure_ascii=False), flush=True)
     else:
         record(args.state_dir, report)
-    return 1 if any(action["action"] != "started" for action in report["actions"]) else 0
+    return 1 if any(action["action"] not in ("started", "restarted") for action in report["actions"]) else 0
 
 
 if __name__ == "__main__":
