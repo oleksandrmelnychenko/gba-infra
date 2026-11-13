@@ -7,6 +7,6 @@ Wants=network-online.target
 Type=oneshot
 WorkingDirectory=/root/projects/gba-infra
 EnvironmentFile=-/etc/gba-sync.env
-ExecStart=/usr/bin/python3 /root/projects/gba-infra/scripts/gba_sync_run.py --mode %i --login-file /var/lib/gba-sync/login.private.json --consume-login --cutover-id ${GBA_SYNC_CUTOVER_ID}
+ExecStart=/usr/bin/python3 /root/projects/gba-infra/scripts/gba_sync_run.py --mode %i --credential-file /etc/gba-sync/credential.json --login-file /var/lib/gba-sync/login.private.json --consume-login --cutover-id ${GBA_SYNC_CUTOVER_ID}
 TimeoutStartSec=23h
 UMask=0077

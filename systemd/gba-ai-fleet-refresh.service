@@ -7,7 +7,7 @@ StartLimitIntervalSec=0
 [Service]
 Type=oneshot
 WorkingDirectory=/root/projects/gba-infra
-ExecStart=/usr/bin/python3 /root/projects/gba-infra/scripts/refresh_ai_fleet.py --wait-lock 21600
+ExecStart=/usr/bin/python3 /root/projects/gba-infra/scripts/refresh_ai_fleet.py --wait-sync 5400 --wait-lock 21600
 TimeoutStartSec=23h
 Restart=on-failure
 RestartSec=5min

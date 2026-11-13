@@ -355,3 +355,80 @@ def test_check_mode_reports_and_starts_nothing(tmp_path, healthy_fleet, capsys):
     assert report["a_run_now_would"].startswith("start a new cycle")
     assert healthy_fleet.call_args.kwargs == {"start_inactive": False}
     assert not (tmp_path / "state").exists()
+
+
+def test_cycle_waits_for_a_running_synchronization_and_records_the_wait(tmp_path, capsys):
+    state_dir = tmp_path / "state"
+    sync_lock = tmp_path / "run.lock"
+    with sync_lock.open("a") as holder:
+        fcntl.flock(holder, fcntl.LOCK_EX)
+        naps = []
+        def release(seconds):
+            naps.append(seconds)
+            if len(naps) == 2:
+                fcntl.flock(holder, fcntl.LOCK_UN)
+        with patch.object(refresh.time, "sleep", side_effect=release), \
+                patch.object(refresh, "cycle_date", return_value="2026-09-07"), \
+                patch.object(refresh.subprocess, "run", side_effect=completing([])):
+            assert refresh.run(tmp_path, state_dir, wait_sync=5400, sync_lock=sync_lock) == 0
+    assert naps == [30, 30]
+    state = json.loads((state_dir / "2026-09-07.json").read_text())
+    assert state["status"] == "complete" and state["sync_wait"]["still_running"] is False
+    assert "The synchronization run ended" in capsys.readouterr().out
+
+
+def test_wait_for_a_synchronization_is_bounded_and_the_cycle_says_it_ran_early(tmp_path, capsys):
+    state_dir = tmp_path / "state"
+    sync_lock = tmp_path / "run.lock"
+    clock = [1000.0]
+    def nap(seconds):
+        clock[0] += seconds
+    with sync_lock.open("a") as holder:
+        fcntl.flock(holder, fcntl.LOCK_EX)
+        with patch.object(refresh.time, "sleep", side_effect=nap), \
+                patch.object(refresh.time, "time", side_effect=lambda: clock[0]), \
+                patch.object(refresh, "cycle_date", return_value="2026-09-07"), \
+                patch.object(refresh.subprocess, "run", side_effect=completing([])):
+            assert refresh.run(tmp_path, state_dir, wait_sync=5400, sync_lock=sync_lock) == 0
+    state = json.loads((state_dir / "2026-09-07.json").read_text())
+    assert state["sync_wait"] == {"waited_seconds": 5400, "still_running": True}
+    assert state["status"] == "complete"
+    assert "still holds the lock after 5400 s" in capsys.readouterr().out
+
+
+def test_no_wait_without_the_option_without_a_lock_file_or_without_a_holder(tmp_path):
+    sync_lock = tmp_path / "run.lock"
+    with patch.object(refresh.time, "sleep") as nap:
+        assert refresh.wait_for_sync(sync_lock, 5400) is None
+        sync_lock.touch()
+        assert refresh.wait_for_sync(sync_lock, 5400) is None
+        with sync_lock.open("a") as holder:
+            fcntl.flock(holder, fcntl.LOCK_EX)
+            assert refresh.wait_for_sync(sync_lock, 0) is None
+            assert refresh.sync_running(sync_lock)
+        nap.assert_not_called()
+    assert not (tmp_path / "absent.lock").exists() and not refresh.sync_running(tmp_path / "absent.lock")
+
+
+def test_wait_for_the_synchronization_happens_before_the_fleet_lock_is_taken(tmp_path):
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    sync_lock = tmp_path / "run.lock"
+    seen = []
+    def waiting(path, limit):
+        with (state_dir / "refresh.lock").open("a") as probe:
+            fcntl.flock(probe, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            seen.append((path, limit))
+        return None
+    with patch.object(refresh, "wait_for_sync", side_effect=waiting), \
+            patch.object(refresh, "cycle_date", return_value="2026-09-07"), \
+            patch.object(refresh.subprocess, "run", side_effect=completing([])):
+        assert refresh.run(tmp_path, state_dir, wait_sync=5400, sync_lock=sync_lock) == 0
+    assert seen == [(sync_lock, 5400)]
+
+
+def test_timer_unit_waits_for_the_synchronization_and_the_runner_does_not_wait_for_itself():
+    root = Path(__file__).resolve().parents[1]
+    unit = (root / "systemd/gba-ai-fleet-refresh.service").read_text()
+    assert "refresh_ai_fleet.py --wait-sync 5400 --wait-lock 21600" in unit
+    assert "--wait-sync" not in (root / "scripts/gba_sync_run.py").read_text()

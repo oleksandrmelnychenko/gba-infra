@@ -51,6 +51,11 @@ Reco/NBA schedulers вимкнені; для Procure scheduler встановл�
 `FLEET_MANAGED_REFRESH=true`, що залишає watchdog і прибирає дубльовані cron jobs.
 Щотижневі retrain timers не змінюються.
 
+Юніт запускає скрипт із `--wait-sync 5400`: поки нічна синхронізація з 1С
+(`gba-sync-nightly.timer`, 02:00) тримає `/var/lib/gba-sync/run.lock`, цикл чекає
+не довше 90 хвилин і потім стартує; поле `sync_wait` у файлі циклу показує, скільки
+чекали і чи синхронізація ще тривала. Докладніше: `docs/sync-nightly.md`.
+
 Рекомендації продажу потребують явного `clientAgreementNetId`. Історія клієнта,
 наявність товару і ціна відповідають цьому договору. Pricing повертає
 `discount_base_price` для перевірки ціни зі знижки. `constraints-conflict` означає

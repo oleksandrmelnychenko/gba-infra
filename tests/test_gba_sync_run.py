@@ -38,7 +38,8 @@ class FakeStand:
         self.calls.append(url)
         if url.endswith("/usermanagement/token"):
             self.tokens += 1
-            assert json.loads(data) == {"UserName": "u", "Password": "p"}
+            assert {key.lower(): value for key, value in json.loads(data).items()} == \
+                {"username": "u", "password": "p"}
             if self.token_code != 200:
                 return self.answer(None, self.token_code)
             return self.answer({"AccessToken": "token", "AccessTokenExpiresIn": 900})
@@ -291,6 +292,127 @@ def test_unit_command_line_is_still_accepted():
     args = runner.build_parser().parse_args(words)
     assert args.mode == "light" and args.consume_login and args.cutover_id == "cutover"
     assert args.login_file == Path("/var/lib/gba-sync/login.private.json") and not args.dry_run
+    assert args.credential_file == Path("/etc/gba-sync/credential.json")
+
+
+def credential(tmp_path, mode=0o600, content=None):
+    path = tmp_path / "credential.json"
+    path.write_text(json.dumps(content if content is not None else
+                               {"Username": "u", "Password": "p", "Role": "Service: 1C sync"}))
+    path.chmod(mode)
+    return path
+
+
+def test_persistent_credential_is_preferred_and_neither_file_is_deleted(stand, tmp_path):
+    path = credential(tmp_path)
+    fake, job, login = stand("light", "--consume-login", "--credential-file", str(path))
+    with patch.object(runner, "CREDENTIAL_OWNER", path.stat().st_uid):
+        assert execute(fake, job) == 0
+    assert fake.started == ["amg", "fenix"]
+    assert path.exists() and login.exists()
+    assert latest(job)["ok"] and latest(job)["failure"] is None
+
+
+def test_one_time_login_is_used_when_the_credential_file_is_absent(stand, tmp_path):
+    fake, job, login = stand("light", "--consume-login", "--credential-file", str(tmp_path / "absent.json"))
+    assert execute(fake, job) == 0
+    assert fake.started == ["amg", "fenix"] and not login.exists()
+
+
+@pytest.mark.parametrize("mode", [0o644, 0o640, 0o700, 0o400])
+def test_credential_file_with_another_mode_is_refused_without_falling_back(stand, tmp_path, mode):
+    path = credential(tmp_path, mode)
+    fake, job, login = stand("light", "--consume-login", "--credential-file", str(path))
+    with patch.object(runner, "CREDENTIAL_OWNER", path.stat().st_uid):
+        assert execute(fake, job) == runner.EXIT_LOGIN
+    assert fake.tokens == 0 and fake.started == [] and login.exists() and path.exists()
+    result = latest(job)
+    assert not result["ok"] and result["exit"] == runner.EXIT_LOGIN
+    assert "is refused" in result["failure"] and f"mode {mode:04o}" in result["failure"]
+
+
+def test_credential_file_of_another_owner_or_a_symlink_is_refused(stand, tmp_path):
+    path = credential(tmp_path)
+    fake, job, _ = stand("light", "--credential-file", str(path))
+    with patch.object(runner, "CREDENTIAL_OWNER", path.stat().st_uid + 1):
+        assert execute(fake, job) == runner.EXIT_LOGIN
+    assert "owned by uid" in latest(job)["failure"] and fake.tokens == 0
+    link = tmp_path / "link.json"
+    link.symlink_to(path)
+    fake, job, _ = stand("light", "--credential-file", str(link))
+    with patch.object(runner, "CREDENTIAL_OWNER", path.stat().st_uid):
+        assert execute(fake, job) == runner.EXIT_LOGIN
+    assert "not a regular file" in latest(job)["failure"] and fake.tokens == 0
+
+
+def test_credential_file_without_a_password_is_refused(stand, tmp_path):
+    path = credential(tmp_path, content={"Username": "u"})
+    fake, job, _ = stand("light", "--credential-file", str(path))
+    with patch.object(runner, "CREDENTIAL_OWNER", path.stat().st_uid):
+        assert execute(fake, job) == runner.EXIT_LOGIN
+    assert "no Username and Password" in latest(job)["failure"]
+
+
+def test_refused_persistent_credential_fails_the_run_and_keeps_the_file(stand, tmp_path):
+    path = credential(tmp_path)
+    fake, job, _ = stand("light", "--credential-file", str(path), token_code=401)
+    with patch.object(runner, "CREDENTIAL_OWNER", path.stat().st_uid):
+        assert execute(fake, job) == runner.EXIT_LOGIN
+    assert path.exists() and fake.started == []
+    assert "refused the credential (HTTP 401); the credential file was left in place" in latest(job)["failure"]
+
+
+def test_neither_the_password_nor_the_token_reaches_the_log_or_the_state(stand, tmp_path, capsys):
+    path = credential(tmp_path, content={"Username": "u", "Password": "p", "Note": "s3cr3t-marker"})
+    secret = json.loads(path.read_text())
+    fake, job, _ = stand("light", "--credential-file", str(path), outcomes={"amg": "Failed"})
+    def answering(url, **kwargs):
+        code, raw = fake(url, **kwargs)
+        if url.endswith("/usermanagement/token"):
+            raw = json.dumps({"Body": {"AccessToken": "t0ken-marker", "AccessTokenExpiresIn": 900}}).encode()
+        return code, raw
+    def stand_in(url, *, headers=None, **kwargs):
+        if headers and headers.get("Authorization") == "Bearer t0ken-marker":
+            headers = {**headers, "Authorization": "Bearer token"}
+        return answering(url, headers=headers, **kwargs)
+    with patch.object(runner, "CREDENTIAL_OWNER", path.stat().st_uid), \
+            patch.object(runner, "http_request", side_effect=stand_in):
+        assert job.run() == runner.EXIT_FAILED
+    written = capsys.readouterr().out + (job.state_dir / "run.log").read_text() \
+        + (job.state_dir / "latest.json").read_text()
+    assert "t0ken-marker" not in written and secret["Note"] not in written
+    assert '"Password"' not in written and '"p"' not in written
+    assert '"source": "credential file"' in written
+
+
+def test_dry_run_with_the_persistent_credential_names_it_in_the_plan(stand, tmp_path, capsys):
+    path = credential(tmp_path)
+    fake, job, login = stand("light", "--dry-run", "--consume-login", "--credential-file", str(path))
+    with patch.object(runner, "CREDENTIAL_OWNER", path.stat().st_uid):
+        assert execute(fake, job) == 0
+    output = capsys.readouterr().out
+    assert f"log in with the persistent credential {path} (never deleted)" in output
+    assert "the run would proceed" in output and fake.started == []
+    assert login.exists() and path.exists() and not job.state_dir.exists()
+
+
+def test_every_failure_before_a_session_is_written_to_latest_json(stand):
+    fake, job, _ = stand("light", token_code=401)
+    assert execute(fake, job) == runner.EXIT_LOGIN
+    assert latest(job)["ok"] is False and "HTTP 401" in latest(job)["failure"]
+    fake, job, _ = stand("light", busy=True)
+    assert execute(fake, job) == runner.EXIT_BUSY
+    assert latest(job)["exit"] == runner.EXIT_BUSY and "already in progress" in latest(job)["failure"]
+    fake, job, _ = stand("light", outcomes={"fenix": "Failed"})
+    assert execute(fake, job) == runner.EXIT_FAILED
+    assert latest(job)["failure"] == "fenix: Failed at Sales" and latest(job)["exit"] == runner.EXIT_FAILED
+
+
+def test_nightly_timer_fires_at_two_kyiv_and_never_catches_up():
+    timer = (Path(__file__).resolve().parents[1] / "systemd/gba-sync-nightly.timer").read_text().splitlines()
+    assert "OnCalendar=*-*-* 02:00:00 Europe/Kyiv" in timer
+    assert "Persistent=false" in timer and "Unit=gba-sync@light.service" in timer
+    assert not any(line.startswith(("OnBootSec", "OnStartupSec", "OnUnitActiveSec")) for line in timer)
 
 
 def test_next_base_waits_until_the_server_is_idle_after_its_run_is_terminal(stand):

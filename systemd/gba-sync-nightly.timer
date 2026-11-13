@@ -1,0 +1,12 @@
+[Unit]
+Description=Start the light 1C synchronization every night at 02:00 Kyiv
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 Europe/Kyiv
+Persistent=false
+AccuracySec=1s
+RandomizedDelaySec=0
+Unit=gba-sync@light.service
+
+[Install]
+WantedBy=timers.target

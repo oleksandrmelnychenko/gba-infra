@@ -32,6 +32,13 @@ started after the given instant. The lock is flock; --wait-lock waits for a
 running cycle instead of giving up, so a forced run spanning 05:00 does not
 swallow the day's cycle. Exit codes: 0 done or nothing to do, 1 failed,
 2 bad arguments, 75 the lock is held by another run.
+
+Synchronization. --wait-sync waits, before the fleet lock is taken, while the
+1C synchronization runner holds its own lock (the nightly run starts at 02:00
+and normally ends before 05:00). The wait is bounded: when the runner still
+holds the lock after the limit the cycle starts on the data it has, and
+`sync_wait` in the cycle file says so. The runner's own forced refresh does not
+pass --wait-sync, so it never waits for itself.
 """
 from __future__ import annotations
 
@@ -114,6 +121,35 @@ def acquire(lock, wait_seconds: float) -> bool:
             time.sleep(min(5.0, max(0.1, deadline - time.monotonic())))
 
 
+def sync_running(lock_path: Path) -> bool:
+    try:
+        with lock_path.open("r") as handle:
+            try:
+                fcntl.flock(handle, fcntl.LOCK_SH | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return True
+            return False
+    except OSError:
+        return False
+
+
+def wait_for_sync(lock_path: Path, limit: float, poll: float = 30) -> dict | None:
+    if limit <= 0 or not sync_running(lock_path):
+        return None
+    started = time.time()
+    print(f"A synchronization run holds {lock_path}; waiting up to {limit:g} s for it", flush=True)
+    while True:
+        waited = round(time.time() - started)
+        if not sync_running(lock_path):
+            print(f"The synchronization run ended after {waited} s of waiting", flush=True)
+            return {"waited_seconds": waited, "still_running": False}
+        if waited >= limit:
+            print(f"The synchronization run still holds the lock after {waited} s; "
+                  f"the cycle starts on the data it has", flush=True)
+            return {"waited_seconds": waited, "still_running": True}
+        time.sleep(poll)
+
+
 def stage_runtime(root: Path, service: str) -> dict:
     runtime = health.unit_runtime(service)
     if runtime is None:
@@ -154,8 +190,10 @@ def describe(report: dict) -> str:
 
 
 def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = None,
-        fresh_since: datetime | None = None, wait_lock: float = 0) -> int:
+        fresh_since: datetime | None = None, wait_lock: float = 0, wait_sync: float = 0,
+        sync_lock: Path = Path("/var/lib/gba-sync/run.lock")) -> int:
     state_dir.mkdir(parents=True, exist_ok=True)
+    sync_wait = wait_for_sync(sync_lock, wait_sync)
     with (state_dir / "refresh.lock").open("a") as lock:
         if not acquire(lock, wait_lock):
             print("A fleet refresh is already running; the lock could not be taken", flush=True)
@@ -188,6 +226,8 @@ def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = N
         }
         state.setdefault("cycle_date", day)
         state["status"] = "running"
+        if sync_wait:
+            state["sync_wait"] = sync_wait
         for stale in ("completed_at", "failure", "failed_services", "failed_stages"):
             state.pop(stale, None)
         state_lock = RLock()
@@ -350,6 +390,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--fresh-since", default="",
                         help="with --force: do not repeat a cycle that started at or after this ISO instant")
     parser.add_argument("--wait-lock", type=float, default=0, metavar="SECONDS")
+    parser.add_argument("--wait-sync", type=float, default=0, metavar="SECONDS",
+                        help="wait this long for a running 1C synchronization before the cycle")
+    parser.add_argument("--sync-lock", type=Path, default=Path("/var/lib/gba-sync/run.lock"))
     parser.add_argument("--check", action="store_true", help="read-only report; starts nothing")
     args = parser.parse_args(argv)
     day = args.cycle_date or None
@@ -365,7 +408,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.check:
         return check(args.root, args.state_dir, day=day)
     return run(args.root, args.state_dir, force=args.force, day=day,
-               fresh_since=fresh_since, wait_lock=args.wait_lock)
+               fresh_since=fresh_since, wait_lock=args.wait_lock, wait_sync=args.wait_sync,
+               sync_lock=args.sync_lock)
 
 
 if __name__ == "__main__":

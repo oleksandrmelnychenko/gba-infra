@@ -44,12 +44,20 @@ pre-flight stops the run before an hour is spent.
 Waits are bounded: status calls, the start of a run, a whole session and the
 fleet lock each have a limit and a message that says which one expired.
 
---consume-login deletes the one-time login file only after pre-flight passed and
-the run is about to start; a busy server is polled for --busy-wait seconds first.
+Credential. --credential-file names the persistent service credential: it is
+used when the file exists, is never deleted, and is refused unless it is a
+regular file owned by root with mode 0600. Without it the one-time
+--login-file is used; --consume-login deletes that file only after pre-flight
+passed and the run is about to start. A busy server is polled for --busy-wait
+seconds first. Neither the credential nor the token is ever logged.
 --dry-run performs every read-only check, prints the plan and starts
 nothing; it never deletes the login file and writes no state.
 
-Exit codes: 0 done, 1 failed, 2 the login file is unusable, 3 busy,
+Failure. Every failed run leaves "ok": false and a one-line "failure" in
+latest.json and exits non-zero, so the unit is failed as well. Only a run that
+found another run holding the lock leaves latest.json to that run.
+
+Exit codes: 0 done, 1 failed, 2 the credential is unusable, 3 busy,
 4 pre-flight failed.
 """
 from __future__ import annotations
@@ -58,7 +66,9 @@ import argparse
 from datetime import datetime, timezone
 import fcntl
 import json
+import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 import time
@@ -72,6 +82,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ai_fleet_health as health
 
 EXIT_FAILED, EXIT_LOGIN, EXIT_BUSY, EXIT_PREFLIGHT = 1, 2, 3, 4
+CREDENTIAL_OWNER, CREDENTIAL_MODE = 0, 0o600
 FLEET_LOCK_BUSY = 75
 KYIV = ZoneInfo("Europe/Kyiv")
 
@@ -120,6 +131,28 @@ def iso_now() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
+def read_credential(path: Path) -> bytes:
+    """Return the login body of a persistent credential file that only root can read."""
+    try:
+        info = os.lstat(path)
+    except OSError as exc:
+        raise LoginError(f"credential file {path} cannot be read: {exc.strerror or exc}") from None
+    mode = stat.S_IMODE(info.st_mode)
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != CREDENTIAL_OWNER or mode != CREDENTIAL_MODE:
+        raise LoginError(
+            f"credential file {path} is refused: it must be a regular file owned by uid {CREDENTIAL_OWNER} "
+            f"with mode {CREDENTIAL_MODE:04o} (found uid {info.st_uid}, mode {mode:04o}"
+            f"{'' if stat.S_ISREG(info.st_mode) else ', not a regular file'})")
+    try:
+        value = parse_json(path.read_bytes())
+    except OSError as exc:
+        raise LoginError(f"credential file {path} cannot be read: {exc.strerror or exc}") from None
+    username, password = value.get("Username"), value.get("Password")
+    if not isinstance(username, str) or not isinstance(password, str) or not username or not password:
+        raise LoginError(f"credential file {path} has no Username and Password")
+    return json.dumps({"Username": username, "Password": password}).encode()
+
+
 class Runner:
     def __init__(self, args: argparse.Namespace) -> None:
         self.args = args
@@ -129,6 +162,8 @@ class Runner:
         self.run_id = uuid.uuid4().hex
         self.token_value: tuple[str, float] | None = None
         self.login = b""
+        self.persistent = False
+        self.source = "login file"
         self.started_at = datetime.now().astimezone()
 
     def log(self, **event: object) -> None:
@@ -143,13 +178,22 @@ class Runner:
 
     def read_login(self) -> None:
         """Read the credential and prove it works before the file may be deleted."""
-        path: Path = self.args.login_file
-        try:
-            self.login = path.read_bytes()
-        except OSError as exc:
-            raise LoginError(f"login file {path} cannot be read: {exc.strerror or exc}") from None
-        if not parse_json(self.login):
-            raise LoginError(f"login file {path} is not a JSON object; it was left in place")
+        credential: Path | None = self.args.credential_file
+        if credential is not None and os.path.lexists(credential):
+            self.login = read_credential(credential)
+            self.persistent = True
+            self.source = "credential file"
+        else:
+            path: Path | None = self.args.login_file
+            if path is None:
+                raise LoginError(f"credential file {credential} does not exist and no --login-file was given"
+                                 if credential is not None else "neither --credential-file nor --login-file was given")
+            try:
+                self.login = path.read_bytes()
+            except OSError as exc:
+                raise LoginError(f"login file {path} cannot be read: {exc.strerror or exc}") from None
+            if not parse_json(self.login):
+                raise LoginError(f"login file {path} is not a JSON object; it was left in place")
         deadline = time.time() + self.args.login_timeout
         while True:
             try:
@@ -161,11 +205,11 @@ class Runner:
                 if time.time() >= deadline:
                     raise LoginError(
                         f"no token within {self.args.login_timeout} s ({str(exc)[:200]}); "
-                        f"the login file was left in place") from None
+                        f"the {self.source} was left in place") from None
                 time.sleep(self.args.poll)
 
     def consume_login(self) -> None:
-        if self.args.consume_login and not self.dry:
+        if self.args.consume_login and not self.dry and not self.persistent and self.args.login_file is not None:
             self.args.login_file.unlink(missing_ok=True)
 
     def fetch_token(self) -> str:
@@ -174,7 +218,7 @@ class Runner:
             headers={"Content-Type": "application/json"}, timeout=60)
         body = parse_json(raw).get("Body")
         if 400 <= code < 500:
-            raise LoginError(f"the server refused the credential (HTTP {code}); the login file was left in place")
+            raise LoginError(f"the server refused the credential (HTTP {code}); the {self.source} was left in place")
         if code != 200 or not isinstance(body, dict) or not body.get("AccessToken"):
             raise RunnerError(f"token endpoint answered HTTP {code} without a token")
         self.token_value = (body["AccessToken"], time.time() + float(body.get("AccessTokenExpiresIn", 600)))
@@ -421,7 +465,9 @@ class Runner:
             if self.args.mode == "full":
                 steps[-2] = "only when at least one base finished: " + steps[-2]
         steps.append(f"write {self.state_dir / 'latest.json'} with a result per base and per downstream step")
-        if self.args.consume_login:
+        if self.persistent:
+            steps.insert(0, f"log in with the persistent credential {self.args.credential_file} (never deleted)")
+        elif self.args.consume_login:
             steps.insert(0, f"delete {self.args.login_file} (it already produced a token)")
         return steps
 
@@ -443,16 +489,14 @@ class Runner:
             try:
                 self.read_login()
             except LoginError as exc:
-                self.log(step="start", ok=False, reason=str(exc))
-                return EXIT_LOGIN
-            self.log(step="login", ok=True)
+                return self.fail(EXIT_LOGIN, str(exc))
+            self.log(step="login", ok=True, source=self.source)
             busy_deadline = time.time() + (0 if self.dry else self.args.busy_wait)
             while True:
                 try:
                     status = self.status()
                 except RunnerError as exc:
-                    self.log(step="start", ok=False, reason=str(exc))
-                    return EXIT_PREFLIGHT
+                    return self.fail(EXIT_PREFLIGHT, str(exc))
                 last = status.get("LastTerminalRun") or {}
                 active = status.get("ActiveRun") or {}
                 busy = bool(status.get("IsInProgress"))
@@ -475,12 +519,12 @@ class Runner:
                     print(f"PLAN {number}. {step}", flush=True)
                 for problem in problems:
                     print(f"PROBLEM {problem}", flush=True)
-                print("DRY RUN: nothing was started, the login file was not deleted, no state was written; "
+                print(f"DRY RUN: nothing was started, the {self.source} was not deleted, no state was written; "
                       + ("the run would stop at pre-flight" if problems else "the run would proceed"), flush=True)
                 return EXIT_PREFLIGHT if problems else 0
             if busy:
-                self.log(step="start", ok=False, reason="a synchronization is already in progress")
-                return EXIT_BUSY
+                return self.fail(EXIT_BUSY, f"a synchronization was already in progress for more than "
+                                            f"{self.args.busy_wait:g} s; this run started nothing")
             if problems:
                 self.log(step="start", ok=False, reason="pre-flight failed", problems=problems)
                 self.finish(False, {}, {}, problems)
@@ -513,14 +557,34 @@ class Runner:
             if lock is not None:
                 lock.close()
 
+    def fail(self, code: int, reason: str) -> int:
+        """Record a run that ended before any session and return its exit code."""
+        self.log(step="start", ok=False, reason=reason)
+        if not self.dry:
+            self.write_latest({"ok": False, "failure": reason, "exit": code, "sessions": False, "bases": {},
+                               "downstream": {}, "preflight_problems": []})
+        return code
+
+    def write_latest(self, result: dict) -> None:
+        (self.state_dir / "latest.json").write_text(json.dumps(
+            {"run": self.run_id, "mode": self.args.mode, **result, "finished_at": iso_now()},
+            ensure_ascii=False) + "\n")
+
     def finish(self, done: bool, bases: dict, downstream: dict, problems: list[str]) -> None:
         sessions = all(item["ok"] for item in bases.values())
         self.log(step="done", ok=done, sessions=sessions, bases={name: item["ok"] for name, item in bases.items()},
                  downstream=downstream)
-        (self.state_dir / "latest.json").write_text(json.dumps(
-            {"run": self.run_id, "mode": self.args.mode, "ok": done, "sessions": sessions, "bases": bases,
-             "downstream": downstream, "preflight_problems": problems, "finished_at": iso_now()},
-            ensure_ascii=False) + "\n")
+        failure = None
+        if not done:
+            parts = [f"pre-flight: {problem}" for problem in problems]
+            parts += [f"{name}: {item.get('reason') or item.get('status') or 'failed'}"
+                      + (f" at {item['failedStep']}" if item.get("failedStep") else "")
+                      for name, item in bases.items() if not item["ok"]]
+            parts += [f"{name} was not refreshed" for name, ok in downstream.items() if not ok]
+            failure = "; ".join(parts)[:1500] or "the run did not complete"
+        self.write_latest({"ok": done, "failure": failure, "exit": 0 if done else
+                           (EXIT_PREFLIGHT if problems else EXIT_FAILED), "sessions": sessions, "bases": bases,
+                           "downstream": downstream, "preflight_problems": problems})
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -531,7 +595,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--server", default="http://127.0.0.1:35981")
     parser.add_argument("--shop-api", default="http://127.0.0.1:62506")
     parser.add_argument("--cutover-id", default="")
-    parser.add_argument("--login-file", type=Path, required=True)
+    parser.add_argument("--credential-file", type=Path,
+                        help="persistent service credential (root, 0600); used when it exists, never deleted")
+    parser.add_argument("--login-file", type=Path, help="one-time login, used when no credential file exists")
     parser.add_argument("--consume-login", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--state-dir", type=Path, default=Path("/var/lib/gba-sync"))
