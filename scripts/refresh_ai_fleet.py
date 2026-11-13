@@ -39,6 +39,15 @@ and normally ends before 05:00). The wait is bounded: when the runner still
 holds the lock after the limit the cycle starts on the data it has, and
 `sync_wait` in the cycle file says so. The runner's own forced refresh does not
 pass --wait-sync, so it never waits for itself.
+
+Single stages. --only <stage>[,<stage>] refreshes just the named stages again,
+under the same lock, health gate, unit runtime and persistence confirmation as
+the full cycle, with a refresh token of its own so nothing cached earlier is
+taken as done. The other stages are not run and are reported as "not requested";
+their entries in the day's state are left as they are. The day keeps its status
+unless a requested stage or the post-flight check fails, which marks it failed;
+a day with no cycle yet gets the status "partial" and the next full run
+finishes it. Each such run is listed under `only_runs`.
 """
 from __future__ import annotations
 
@@ -189,9 +198,22 @@ def describe(report: dict) -> str:
     return "; ".join(parts)
 
 
+TOP_LEVEL_OUTCOME = ("status", "completed_at", "failure", "failed_services", "failed_stages", "failed_at")
+
+
+def parse_only(value: str | None) -> tuple[str, ...]:
+    if not value:
+        return ()
+    names = [name.strip() for name in value.split(",")]
+    unknown = [name for name in names if name not in STAGES]
+    if unknown or not names:
+        raise ValueError("unknown stage: " + ", ".join(repr(name) for name in unknown or names))
+    return tuple(stage for stage in STAGES if stage in names)
+
+
 def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = None,
         fresh_since: datetime | None = None, wait_lock: float = 0, wait_sync: float = 0,
-        sync_lock: Path = Path("/var/lib/gba-sync/run.lock")) -> int:
+        sync_lock: Path = Path("/var/lib/gba-sync/run.lock"), only: tuple[str, ...] = ()) -> int:
     state_dir.mkdir(parents=True, exist_ok=True)
     sync_wait = wait_for_sync(sync_lock, wait_sync)
     with (state_dir / "refresh.lock").open("a") as lock:
@@ -202,7 +224,9 @@ def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = N
         path = state_dir / f"{day}.json"
         previous_state = json.loads(path.read_text()) if path.exists() else None
         request_path = state_dir / "requests/refresh.json"
-        if request_path.exists():
+        if only:
+            force = False
+        elif request_path.exists():
             request = json.loads(request_path.read_text())
             force = force or (request.get("force") is True and previous_state is not None
                               and request.get("expected_run_id") == previous_state.get("run_id"))
@@ -213,7 +237,7 @@ def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = N
                 print(f"Cycle {day} run {previous_state.get('run_id')} started at {started.isoformat()}, "
                       f"after {fresh_since.isoformat()}; not forcing another one", flush=True)
                 force = False
-        if previous_state and previous_state.get("status") == "complete" and not force:
+        if previous_state and previous_state.get("status") == "complete" and not force and not only:
             print("This cycle is already complete; timestamps unchanged", flush=True)
             return 0
         if previous_state and force and previous_state.get("run_id"):
@@ -225,14 +249,27 @@ def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = N
             "started_at": datetime.now().astimezone().isoformat(), "stages": {},
         }
         state.setdefault("cycle_date", day)
+        outcome_before = {name: state[name] for name in TOP_LEVEL_OUTCOME if name in state} \
+            if previous_state else {"status": "partial"}
+        token = uuid.uuid4().hex if only else state["run_id"]
+        only_run = None
+        if only:
+            only_run = {"run_id": token, "stages": list(only),
+                        "not_requested": [stage for stage in STAGES if stage not in only],
+                        "status": "running", "started_at": datetime.now().astimezone().isoformat()}
+            state.setdefault("only_runs", []).append(only_run)
         state["status"] = "running"
         if sync_wait:
             state["sync_wait"] = sync_wait
-        for stale in ("completed_at", "failure", "failed_services", "failed_stages"):
-            state.pop(stale, None)
+        if not only:
+            for stale in ("completed_at", "failure", "failed_services", "failed_stages"):
+                state.pop(stale, None)
         state_lock = RLock()
         publish(state_dir, state)
         print(f"Cycle {day} run {state['run_id']}", flush=True)
+        if only:
+            print(f"Only {', '.join(only)} (refresh {token}); not requested: "
+                  f"{', '.join(only_run['not_requested']) or 'none'}", flush=True)
 
         preflight = health.check_fleet(start_inactive=True)
         with state_lock:
@@ -242,7 +279,9 @@ def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = N
 
         def execute(stage: str) -> bool:
             previous = state["stages"].get(stage, {})
-            if previous.get("status") == "complete":
+            if only and stage not in only:
+                return True
+            if previous.get("status") == "complete" and not only:
                 return True
             service = stage_service(stage)
             runtime = stage_runtime(root, service)
@@ -252,6 +291,8 @@ def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = N
             entry = {"status": "running", "attempt": previous.get("attempt", 0) + 1,
                      "started_at": datetime.now().astimezone().isoformat(),
                      "cwd": runtime["cwd"], "python": runtime["python"], "runtime_source": runtime["source"]}
+            if only:
+                entry["only_run_id"] = token
             with state_lock:
                 state["stages"][stage] = entry
                 publish(state_dir, state)
@@ -265,7 +306,7 @@ def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = N
                         raise RuntimeError("gba-reco web service is down and this stage calls it over HTTP")
                     result = subprocess.run(
                         [runtime["python"], str(Path(__file__).with_name("refresh_ai_service.py")),
-                         stage, "--as-of", day, "--token", state["run_id"], "--result", str(result_file)],
+                         stage, "--as-of", day, "--token", token, "--result", str(result_file)],
                         cwd=runtime["cwd"], env=health.runtime_environment(runtime),
                         stdout=output, stderr=subprocess.STDOUT, timeout=6 * 3600,
                     )
@@ -300,8 +341,14 @@ def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = N
         postflight = health.check_fleet(start_inactive=False)
         state["health"]["post"] = postflight
         print("Post-flight: " + describe(postflight), flush=True)
-        failed_stages = [stage for stage in STAGES if state["stages"].get(stage, {}).get("status") != "complete"]
+        failed_stages = [stage for stage in (only or STAGES)
+                         if state["stages"].get(stage, {}).get("status") != "complete"]
         failed_services = sorted(set(postflight["unhealthy"]))
+        if only:
+            only_run["finished_at"] = datetime.now().astimezone().isoformat()
+            for stage in STAGES:
+                print(f"Stage {stage}: " + (state["stages"].get(stage, {}).get("status", "not run")
+                                            if stage in only else "not requested"), flush=True)
         if not success or failed_services:
             reasons = []
             if failed_stages:
@@ -311,9 +358,21 @@ def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = N
                     f"gba-{name} ({postflight['services'][name].get('reason')})" for name in failed_services))
             state.update(status="failed", failure="; ".join(reasons), failed_services=failed_services,
                          failed_stages=failed_stages, failed_at=datetime.now().astimezone().isoformat())
+            if only:
+                only_run.update(status="failed", failure=state["failure"])
             publish(state_dir, state)
             print("Cycle failed: " + state["failure"], flush=True)
             return EXIT_FAILED
+        if only:
+            for name in TOP_LEVEL_OUTCOME:
+                state.pop(name, None)
+            state.update(outcome_before)
+            if state["status"] == "running":
+                state["status"] = "partial"
+            only_run["status"] = "complete"
+            publish(state_dir, state)
+            print(f"Refreshed {', '.join(only)}; cycle {day} status stays {state['status']!r}", flush=True)
+            return 0
         state.pop("failed_at", None)
         state.update(status="complete", completed_at=datetime.now().astimezone().isoformat())
         publish(state_dir, state)
@@ -322,7 +381,8 @@ def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = N
         return 0
 
 
-def check(root: Path, state_dir: Path, *, day: str | None = None, imports: bool = True) -> int:
+def check(root: Path, state_dir: Path, *, day: str | None = None, imports: bool = True,
+          only: tuple[str, ...] = ()) -> int:
     """Read-only report: health, the runtime each stage would use, state and lock. Starts nothing."""
     day = day or cycle_date()
     report: dict = {"mode": "check", "cycle_date": day, "allowed_cycle_dates": list(allowed_cycle_dates()),
@@ -356,6 +416,9 @@ def check(root: Path, state_dir: Path, *, day: str | None = None, imports: bool 
     stages = {}
     ok = not fleet["unhealthy"]
     for stage in STAGES:
+        if only and stage not in only:
+            stages[stage] = "not requested"
+            continue
         runtime = stage_runtime(root, stage_service(stage))
         entry = {"cwd": runtime["cwd"], "python": runtime["python"], "source": runtime["source"],
                  "environment_files": runtime["environment_files"],
@@ -394,7 +457,14 @@ def main(argv: list[str] | None = None) -> int:
                         help="wait this long for a running 1C synchronization before the cycle")
     parser.add_argument("--sync-lock", type=Path, default=Path("/var/lib/gba-sync/run.lock"))
     parser.add_argument("--check", action="store_true", help="read-only report; starts nothing")
+    parser.add_argument("--only", default="", metavar="STAGE[,STAGE]",
+                        help="refresh only these stages again (" + ", ".join(STAGES) + "); the others are left alone")
     args = parser.parse_args(argv)
+    try:
+        only = parse_only(args.only)
+    except ValueError as exc:
+        print(f"--only: {exc}; stages are {', '.join(STAGES)}", flush=True)
+        return EXIT_ARGUMENTS
     day = args.cycle_date or None
     if day and day not in allowed_cycle_dates():
         print(f"--cycle-date {day} is neither the current cycle nor today in Kyiv "
@@ -406,10 +476,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"--fresh-since {args.fresh_since!r} is not an ISO instant", flush=True)
         return EXIT_ARGUMENTS
     if args.check:
-        return check(args.root, args.state_dir, day=day)
+        return check(args.root, args.state_dir, day=day, only=only)
     return run(args.root, args.state_dir, force=args.force, day=day,
                fresh_since=fresh_since, wait_lock=args.wait_lock, wait_sync=args.wait_sync,
-               sync_lock=args.sync_lock)
+               sync_lock=args.sync_lock, only=only)
 
 
 if __name__ == "__main__":

@@ -432,3 +432,157 @@ def test_timer_unit_waits_for_the_synchronization_and_the_runner_does_not_wait_f
     unit = (root / "systemd/gba-ai-fleet-refresh.service").read_text()
     assert "refresh_ai_fleet.py --wait-sync 5400 --wait-lock 21600" in unit
     assert "--wait-sync" not in (root / "scripts/gba_sync_run.py").read_text()
+
+
+def tokens(calls):
+    return {stage: kwargs["command"][kwargs["command"].index("--token") + 1] for stage, kwargs in calls}
+
+
+def recording(calls, failing=()):
+    def invoke(command, **kwargs):
+        calls.append((command[2], {**kwargs, "command": command}))
+        if command[2] in failing:
+            return SimpleNamespace(returncode=1)
+        Path(command[-1]).write_text(json.dumps({"status": "complete"}))
+        return SimpleNamespace(returncode=0)
+    return invoke
+
+
+def test_only_reruns_the_named_stage_of_a_complete_cycle_and_leaves_the_rest(tmp_path, healthy_fleet, capsys):
+    calls = []
+    with patch.object(refresh, "cycle_date", return_value="2026-09-07"), \
+            patch.object(refresh.subprocess, "run", side_effect=recording(calls)):
+        assert refresh.run(tmp_path, tmp_path / "state") == 0
+        before = json.loads((tmp_path / "state/2026-09-07.json").read_text())
+        full_tokens = tokens(calls)
+        calls.clear()
+        healthy_fleet.reset_mock()
+        capsys.readouterr()
+        assert refresh.run(tmp_path, tmp_path / "state", only=("products",)) == 0
+    assert [stage for stage, _ in calls] == ["products"]
+    assert tokens(calls)["products"] != full_tokens["products"]
+    after = json.loads((tmp_path / "state/2026-09-07.json").read_text())
+    assert after["status"] == "complete"
+    assert after["run_id"] == before["run_id"]
+    assert after["completed_at"] == before["completed_at"]
+    for stage in refresh.STAGES:
+        if stage != "products":
+            assert after["stages"][stage] == before["stages"][stage]
+    assert after["stages"]["products"]["attempt"] == 2
+    assert after["stages"]["products"]["only_run_id"] == tokens(calls)["products"]
+    only_run = after["only_runs"][-1]
+    assert only_run["status"] == "complete" and only_run["stages"] == ["products"]
+    assert "pricing" in only_run["not_requested"] and "products" not in only_run["not_requested"]
+    assert json.loads((tmp_path / "state/latest.json").read_text()) == after
+    assert [call.kwargs for call in healthy_fleet.call_args_list] == [{"start_inactive": True}, {"start_inactive": False}]
+    output = capsys.readouterr().out
+    assert "Stage pricing: not requested" in output
+    assert "Stage products: complete" in output
+
+
+def test_only_uses_the_unit_tree_interpreter_and_environment(tmp_path):
+    calls = []
+
+    def runtime(service):
+        if service != "products":
+            return None
+        return {"cwd": "/srv/monorepo/gba-products", "python": "/srv/venv/bin/python",
+                "environment": {"DB_HOST": "from-the-unit-file"}, "environment_files": ["/srv/products/.env"],
+                "environment_names": []}
+    with patch.object(refresh, "cycle_date", return_value="2026-09-07"), \
+            patch.object(refresh.health, "unit_runtime", side_effect=runtime), \
+            patch.object(refresh.subprocess, "run", side_effect=recording(calls)):
+        assert refresh.run(tmp_path, tmp_path / "state", only=("products",)) == 0
+    (stage, kwargs), = calls
+    assert stage == "products"
+    assert kwargs["cwd"] == "/srv/monorepo/gba-products"
+    assert kwargs["command"][0] == "/srv/venv/bin/python"
+    assert kwargs["env"]["DB_HOST"] == "from-the-unit-file"
+
+
+def test_only_on_a_day_without_a_cycle_is_partial_and_the_full_run_finishes_it(tmp_path):
+    calls = []
+    with patch.object(refresh, "cycle_date", return_value="2026-09-07"), \
+            patch.object(refresh.subprocess, "run", side_effect=recording(calls)):
+        assert refresh.run(tmp_path, tmp_path / "state", only=("pricing", "products")) == 0
+        state = json.loads((tmp_path / "state/2026-09-07.json").read_text())
+        assert state["status"] == "partial"
+        assert set(state["stages"]) == {"pricing", "products"}
+        assert "completed_at" not in state
+        calls.clear()
+        assert refresh.run(tmp_path, tmp_path / "state") == 0
+    assert "products" not in [stage for stage, _ in calls] and "pricing" not in [stage for stage, _ in calls]
+    assert {stage for stage, _ in calls} == set(refresh.STAGES) - {"pricing", "products"}
+    assert json.loads((tmp_path / "state/2026-09-07.json").read_text())["status"] == "complete"
+
+
+def test_only_failure_marks_the_day_failed_and_the_next_run_resumes_that_stage(tmp_path):
+    calls = []
+    with patch.object(refresh, "cycle_date", return_value="2026-09-07"):
+        with patch.object(refresh.subprocess, "run", side_effect=recording(calls)):
+            assert refresh.run(tmp_path, tmp_path / "state") == 0
+        with patch.object(refresh.subprocess, "run", side_effect=recording(calls, failing=("pricing",))):
+            assert refresh.run(tmp_path, tmp_path / "state", only=("pricing",)) == refresh.EXIT_FAILED
+        state = json.loads((tmp_path / "state/2026-09-07.json").read_text())
+        assert state["status"] == "failed"
+        assert state["failed_stages"] == ["pricing"]
+        assert state["only_runs"][-1]["status"] == "failed"
+        assert state["stages"]["reco"]["status"] == "complete"
+        calls.clear()
+        with patch.object(refresh.subprocess, "run", side_effect=recording(calls)):
+            assert refresh.run(tmp_path, tmp_path / "state") == 0
+    assert [stage for stage, _ in calls] == ["pricing"]
+
+
+def test_only_fails_when_a_service_is_unhealthy_afterwards(tmp_path, healthy_fleet):
+    calls = []
+    healthy_fleet.side_effect = [fleet_report(), fleet_report(unhealthy=("products",))]
+    with patch.object(refresh, "cycle_date", return_value="2026-09-07"), \
+            patch.object(refresh.subprocess, "run", side_effect=recording(calls)):
+        assert refresh.run(tmp_path, tmp_path / "state", only=("products",)) == refresh.EXIT_FAILED
+    state = json.loads((tmp_path / "state/2026-09-07.json").read_text())
+    assert state["failed_services"] == ["products"]
+    assert state["only_runs"][-1]["status"] == "failed"
+
+
+def test_only_takes_the_same_lock_and_leaves_a_manual_request_alone(tmp_path):
+    state_dir = tmp_path / "state"
+    (state_dir / "requests").mkdir(parents=True)
+    (state_dir / "requests/refresh.json").write_text(json.dumps({"force": True, "expected_run_id": "x"}))
+    with (state_dir / "refresh.lock").open("a") as holder:
+        fcntl.flock(holder, fcntl.LOCK_EX)
+        with patch.object(refresh.subprocess, "run") as execute:
+            assert refresh.run(tmp_path, state_dir, only=("products",)) == refresh.EXIT_LOCK_BUSY
+            execute.assert_not_called()
+    calls = []
+    with patch.object(refresh, "cycle_date", return_value="2026-09-07"), \
+            patch.object(refresh.subprocess, "run", side_effect=recording(calls)):
+        assert refresh.run(tmp_path, state_dir, only=("products",)) == 0
+    assert (state_dir / "requests/refresh.json").exists()
+
+
+def test_only_nba_needs_reco_and_keeps_stage_order(tmp_path):
+    calls = []
+    with patch.object(refresh, "cycle_date", return_value="2026-09-07"), \
+            patch.object(refresh.subprocess, "run", side_effect=recording(calls)):
+        assert refresh.run(tmp_path, tmp_path / "state", only=refresh.parse_only("nba,reco,nba_feedback")) == 0
+        assert [stage for stage, _ in calls] == ["nba_feedback", "reco", "nba"]
+        calls.clear()
+        with patch.object(refresh.health, "check", return_value={"up": False, "healthy": False}):
+            assert refresh.run(tmp_path, tmp_path / "state", only=("nba",)) == refresh.EXIT_FAILED
+    assert calls == []
+
+
+def test_only_argument_validation(capsys):
+    assert refresh.parse_only("products, pricing") == ("pricing", "products")
+    assert refresh.main(["--only", "products,billing"]) == refresh.EXIT_ARGUMENTS
+    assert "unknown stage: 'billing'" in capsys.readouterr().out
+
+
+def test_check_with_only_reports_other_stages_as_not_requested(tmp_path, capsys):
+    with patch.object(refresh.subprocess, "run") as execute:
+        refresh.check(tmp_path, tmp_path / "state", day="2026-09-07", imports=False, only=("products",))
+        execute.assert_not_called()
+    report = json.loads(capsys.readouterr().out)
+    assert report["stages"]["pricing"] == "not requested"
+    assert report["stages"]["products"]["source"] == "fallback"
