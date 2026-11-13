@@ -6,10 +6,12 @@ one event permission (start a synchronization), and one user in that role. The
 password is generated here, is never printed and is stored only in the
 credential file (root, 0600, directory 0700).
 
-The server takes a new password in the query string and its request log keeps
-query strings, so after every call that carries the password the container log
-is searched for it and each occurrence is overwritten in place. The command
-fails when the log cannot be shown clean.
+The password travels only in the JSON body of the request, never in the URL.
+After every call that carries it the container log is still searched for it and
+each occurrence is overwritten in place; the command fails when the log cannot
+be shown clean. A server that predates body passwords ignores the body: the new
+password then does not log in, the command fails and the credential file stays
+as it was.
 
 provision  create the role, grant the permission, create the user (idempotent)
 rotate     set a new password and rewrite the credential file
@@ -97,6 +99,14 @@ def login(server: str, username: str, password: str) -> str:
 def admin_token(server: str, path: Path) -> str:
     value = json.loads(path.read_text())
     return login(server, value["Username"], value["Password"])
+
+
+def confirm_password(server: str, password: str, what: str) -> None:
+    try:
+        login(server, USER["PhoneNumber"], password)
+    except Failure:
+        raise Failure(f"{what}: the server did not apply the password sent in the request body "
+                      f"(deploy a server that accepts it); the credential file was not changed") from None
 
 
 def log_files(container: str) -> list[str]:
@@ -226,12 +236,13 @@ def provision(args: argparse.Namespace) -> None:
     password = secrets.token_urlsafe(48)
     try:
         status, payload = api(args.server, "POST", "/usermanagement/users/create", token=token,
-                              query={"password": password}, body={**USER, "UserRole": {"NetUid": role_net_uid}})
+                              body={**USER, "UserRole": {"NetUid": role_net_uid}, "Password": password})
     finally:
         replaced = scrub(args.container, password)
     result = unwrap(payload)
     if status != 200 or (isinstance(result, dict) and result.get("Succeeded") is False):
         raise Failure(f"user create failed: HTTP {status}")
+    confirm_password(args.server, password, "user create")
     user = find_user(args.server, token)
     if user is None:
         raise Failure("the user was created but is not listed")
@@ -252,12 +263,13 @@ def rotate(args: argparse.Namespace) -> None:
     password = secrets.token_urlsafe(48)
     try:
         status, payload = api(args.server, "PATCH", "/usermanagement/profiles/users/password/reset", token=token,
-                              query={"netId": user_net_uid, "password": password})
+                              query={"netId": user_net_uid}, body={"Password": password})
     finally:
         replaced = scrub(args.container, password)
     result = unwrap(payload)
     if status != 200 or (isinstance(result, dict) and result.get("Succeeded") is False):
         raise Failure(f"password reset failed: HTTP {status}; the credential file was not changed")
+    confirm_password(args.server, password, "password reset")
     write_credential(args.credential_file, credential_payload(password, user_net_uid, role_net_uid, args.server))
     print(f"password rotated; occurrences removed from the server log: {replaced}")
     verify(args)

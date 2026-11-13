@@ -12,16 +12,18 @@ import sync_service_account as account
 
 
 class FakeServer:
-    def __init__(self, role_keys=None, user=False, me_status=200, create_status=200):
+    def __init__(self, role_keys=None, user=False, me_status=200, create_status=200, body_passwords=True):
         self.roles, self.users, self.calls, self.passwords = [], [], [], []
         self.role_keys, self.version = list(role_keys or []), 0
         self.me_status, self.create_status = me_status, create_status
+        self.body_passwords, self.urls = body_passwords, []
         if user:
             self.roles.append({"Name": account.ROLE["Name"], "NetUid": "role-1", "UserRoleType": 13, "Deleted": False})
             self.users.append({"PhoneNumber": account.USER["PhoneNumber"], "NetUid": "user-1", "Deleted": False})
 
     def __call__(self, server, method, path, *, body=None, query=None, token=None):
         self.calls.append((method, path))
+        self.urls.append(path + "?" + account.urllib.parse.urlencode(query or {}))
         if path == "/usermanagement/token":
             if body["Username"] == "admin":
                 return 200, {"Body": {"AccessToken": "admin-token"}}
@@ -40,13 +42,16 @@ class FakeServer:
         if path.endswith("/users/registry"):
             return 200, {"Body": self.users}
         if path.endswith("/users/create"):
-            self.passwords.append(query["password"])
+            assert not query
+            if self.body_passwords:
+                self.passwords.append(body["Password"])
             if self.create_status == 200:
                 self.users.append({**body, "NetUid": "user-1", "Deleted": False})
             return self.create_status, {"Body": {"Succeeded": self.create_status == 200}}
         if path.endswith("/users/password/reset"):
-            assert query["netId"] == "user-1"
-            self.passwords.append(query["password"])
+            assert query == {"netId": "user-1"}
+            if self.body_passwords:
+                self.passwords.append(body["Password"])
             return 200, {"Body": {"Succeeded": True}}
         if path == "/data/sync/status":
             return (200, {"Body": {}}) if token == "service-token" else (401, None)
@@ -107,6 +112,30 @@ def test_failed_create_scrubs_the_log_and_writes_no_credential(stand):
     with patch.object(account, "api", side_effect=server), pytest.raises(account.Failure):
         account.provision(args)
     assert scrubbed == server.passwords and not args.credential_file.exists()
+
+
+def test_the_password_never_travels_in_a_url(stand):
+    args, scrubbed = stand
+    server = FakeServer()
+    with patch.object(account, "api", side_effect=server):
+        account.provision(args)
+        account.rotate(args)
+    assert len(scrubbed) == 2
+    assert not any(secret in url or "password" in url.split("?", 1)[1].lower()
+                   for secret in scrubbed for url in server.urls)
+
+
+def test_a_server_that_ignores_the_body_password_leaves_the_credential_file_unchanged(stand):
+    args, _ = stand
+    server = FakeServer()
+    with patch.object(account, "api", side_effect=server):
+        account.provision(args)
+        before = args.credential_file.read_text()
+        server.body_passwords = False
+        with pytest.raises(account.Failure, match="did not apply the password"):
+            account.rotate(args)
+        assert args.credential_file.read_text() == before
+        account.verify(args)
 
 
 def test_rotate_replaces_the_password_and_the_old_one_stops_working(stand):
