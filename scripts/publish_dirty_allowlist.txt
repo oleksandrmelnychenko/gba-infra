@@ -1,0 +1,11 @@
+# Tracked files a standalone AI service checkout may carry as local,
+# uncommitted host adjustments without blocking publish_gba_ai_services.sh.
+# One shell glob per line, matched against the path relative to the service
+# root. These modifications are tolerated, never published: only HEAD is copied.
+# Application code must not be listed here; commit it instead.
+.env.example
+Makefile
+README.md
+docker-compose.yml
+docs/*
+deploy/*.service

@@ -185,7 +185,7 @@ class PublishScriptSafetyTests(unittest.TestCase):
         self.assertEqual("uncommitted standalone work\n", dirty.read_text())
 
     def test_reverse_apply_updates_host_copy_without_removing_runtime_state(self) -> None:
-        target = self.root / "gba-products"
+        target = self.root / "gba-procure"
         runtime_env = target / ".env"
         runtime_cache = target / "data" / "cache.bin"
         runtime_env.write_text("SECRET=runtime-only\n", encoding="utf-8")
@@ -204,7 +204,7 @@ class PublishScriptSafetyTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual(
-            "combined monorepo: gba-products\n",
+            "combined monorepo: gba-procure\n",
             (target / "combined.txt").read_text(encoding="utf-8"),
         )
         self.assertFalse(standalone_only.exists())
@@ -218,12 +218,173 @@ class PublishScriptSafetyTests(unittest.TestCase):
             "-----BEGIN PRIVATE KEY-----\nnot-a-real-key\n",
             encoding="utf-8",
         )
+        _commit_all(self.root / "gba-forecast", "leak")
 
         result = self.run_script("--to-monorepo", "--apply")
 
         self.assertNotEqual(0, result.returncode)
         self.assertIn("credential scan failed before sync", result.stderr)
         self.assertTrue((self.monorepo / "gba-forecast" / "stale.txt").exists())
+
+    def test_products_is_never_touched_without_the_explicit_flag(self) -> None:
+        forward = self.run_script("--to-monorepo", "--apply")
+
+        self.assertEqual(0, forward.returncode, forward.stderr)
+        self.assertIn("gba-products: skipped", forward.stdout)
+        self.assertEqual(
+            "stale monorepo copy: gba-products\n",
+            (self.monorepo / "gba-products" / "stale.txt").read_text(encoding="utf-8"),
+        )
+        self.assertFalse((self.monorepo / "gba-products" / "combined.txt").exists())
+        self.assertFalse((self.monorepo / "gba-reco" / "stale.txt").exists())
+
+        _commit_all(self.monorepo, "forward sync")
+        reverse = self.run_script("--to-standalone", "--apply")
+
+        self.assertEqual(0, reverse.returncode, reverse.stderr)
+        self.assertFalse((self.root / "gba-products" / "stale.txt").exists())
+        self.assertEqual(
+            "standalone source: gba-products\n",
+            (self.root / "gba-products" / "combined.txt").read_text(encoding="utf-8"),
+        )
+
+    def test_only_products_requires_the_explicit_flag(self) -> None:
+        result = self.run_script("--only", "gba-products", "--apply")
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("--include-products", result.stderr)
+        self.assertTrue((self.monorepo / "gba-products" / "stale.txt").exists())
+
+    def test_include_products_flag_syncs_products(self) -> None:
+        result = self.run_script("--include-products", "--only", "gba-products", "--apply")
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertFalse((self.monorepo / "gba-products" / "stale.txt").exists())
+        self.assertTrue((self.monorepo / "gba-products" / "combined.txt").exists())
+        self.assertTrue((self.monorepo / "gba-reco" / "stale.txt").exists())
+
+    def test_only_limits_the_run_and_rejects_unknown_names(self) -> None:
+        result = self.run_script("--only", "gba-solvency,gba-pricing", "--apply")
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertFalse((self.monorepo / "gba-solvency" / "stale.txt").exists())
+        self.assertFalse((self.monorepo / "gba-pricing" / "stale.txt").exists())
+        self.assertTrue((self.monorepo / "gba-reco" / "stale.txt").exists())
+
+        unknown = self.run_script("--only", "gba-unknown")
+
+        self.assertNotEqual(0, unknown.returncode)
+        self.assertIn("unknown service", unknown.stderr)
+
+    def test_dry_run_lists_changes_and_changes_nothing(self) -> None:
+        result = self.run_script("--dry-run")
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("combined.txt", result.stdout)
+        self.assertIn("*deleting", result.stdout)
+        self.assertIn("gba-solvency: +2 new, ~0 changed, -1 deleted", result.stdout)
+        self.assertNotIn("gba-products: +", result.stdout)
+        for service in SERVICES:
+            self.assertTrue((self.monorepo / service / "stale.txt").exists())
+            self.assertFalse((self.monorepo / service / "combined.txt").exists())
+
+    def test_apply_refuses_tracked_changes_outside_the_allow_list(self) -> None:
+        dirty = self.root / "gba-pricing" / "combined.txt"
+        dirty.write_text("uncommitted code\n", encoding="utf-8")
+
+        preview = self.run_script("--dry-run")
+
+        self.assertEqual(0, preview.returncode, preview.stderr)
+        self.assertIn("gba-pricing: REFUSED", preview.stdout)
+        self.assertIn("REFUSED-ON-APPLY", preview.stdout)
+
+        result = self.run_script("--apply")
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("standalone source is dirty: gba-pricing", result.stderr)
+        for service in SERVICES:
+            self.assertTrue((self.monorepo / service / "stale.txt").exists())
+
+    def test_allow_listed_changes_are_tolerated_but_head_is_published(self) -> None:
+        service = self.root / "gba-solvency"
+        (service / "Makefile").write_text("committed\n", encoding="utf-8")
+        (service / "docs").mkdir()
+        (service / "docs" / "RUNBOOK.md").write_text("committed\n", encoding="utf-8")
+        _commit_all(service, "allow-listed files")
+        (service / "Makefile").write_text("local host tweak\n", encoding="utf-8")
+        (service / "docs" / "RUNBOOK.md").write_text("local note\n", encoding="utf-8")
+
+        result = self.run_script("--apply")
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("allow-listed local modifications", result.stdout)
+        self.assertEqual(
+            "committed\n", (self.monorepo / "gba-solvency" / "Makefile").read_text()
+        )
+        self.assertEqual(
+            "committed\n",
+            (self.monorepo / "gba-solvency" / "docs" / "RUNBOOK.md").read_text(),
+        )
+
+    def test_ignored_and_untracked_files_are_never_copied(self) -> None:
+        service = self.root / "gba-procure"
+        (service / ".gitignore").write_text(
+            ".env\n.venv*/\ndata/\n__pycache__/\n*.joblib\n", encoding="utf-8"
+        )
+        _commit_all(service, "ignore rules")
+        for relative in (
+            ".venv/bin/python",
+            ".venv-old/bin/python",
+            "__pycache__/module.pyc",
+            "app/risk/artifacts/model.joblib",
+        ):
+            path = service / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("binary\n", encoding="utf-8")
+        (service / ".env").write_text("SECRET=local\n", encoding="utf-8")
+        (service / "scratch.txt").write_text("untracked\n", encoding="utf-8")
+
+        result = self.run_script("--apply")
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("untracked files are not published", result.stdout)
+        target = self.monorepo / "gba-procure"
+        self.assertTrue((target / "combined.txt").exists())
+        for relative in (
+            ".venv",
+            ".venv-old",
+            "__pycache__",
+            "app/risk/artifacts/model.joblib",
+            ".env",
+            "scratch.txt",
+        ):
+            self.assertFalse((target / relative).exists(), relative)
+
+    def test_committed_env_file_aborts(self) -> None:
+        service = self.root / "gba-nba"
+        (service / ".env.dev").write_text("SECRET=value\n", encoding="utf-8")
+        _commit_all(service, "env committed by mistake")
+
+        result = self.run_script("--apply")
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("non-template env file is committed", result.stderr)
+        self.assertTrue((self.monorepo / "gba-nba" / "stale.txt").exists())
+
+    def test_missing_monorepo_folder_is_created_on_apply(self) -> None:
+        _run("git", "rm", "-rq", "gba-nba", cwd=self.monorepo)
+        _run("git", "commit", "-q", "-m", "drop nba copy", cwd=self.monorepo)
+
+        preview = self.run_script("--dry-run")
+
+        self.assertEqual(0, preview.returncode, preview.stderr)
+        self.assertIn("(new folder)", preview.stdout)
+        self.assertFalse((self.monorepo / "gba-nba").exists())
+
+        result = self.run_script("--apply")
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertTrue((self.monorepo / "gba-nba" / "combined.txt").exists())
 
 
 if __name__ == "__main__":

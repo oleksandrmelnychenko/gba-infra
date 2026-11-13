@@ -257,11 +257,19 @@ Non-loopback service URLs must use HTTPS; HTTP is accepted only for loopback dev
 ## Safe AI service synchronization
 
 The systemd DEV units execute the standalone trees under `/root/projects/gba-<service>`, while
-`gba-ai-services` is the pushable monorepo. `scripts/publish_gba_ai_services.sh` synchronizes only
-the seven service subdirectories, defaults to a read-only checksum preview, scans publishable files
-for credential-like values, and preserves Git metadata plus ignored runtime state (`.env`, `.venv`,
-`data`, caches). A real sync refuses dirty destinations. Deletes are confined to the selected
-service roots, and pushes use normal fast-forward checks.
+`gba-ai-services` is the pushable monorepo. `scripts/publish_gba_ai_services.sh` synchronizes the
+six standalone service subdirectories (`gba-nba`, `gba-reco`, `gba-procure`, `gba-solvency`,
+`gba-pricing`, `gba-forecast`). It copies only the committed `HEAD` of each source, defaults to a
+read-only checksum preview with a per-service summary, scans the content for credential-like values,
+and never copies or deletes ignored runtime state (`.env`, `.venv*`, `data`, caches, model binaries).
+
+`gba-products` is different: its monorepo tree is the source the systemd unit runs, so the script
+skips it in both directions unless `--include-products` is given. `--only a,b` limits a run.
+
+`--apply` refuses a dirty monorepo and refuses any standalone source whose tracked files are modified
+outside `scripts/publish_dirty_allowlist.txt` (host-only files such as `Makefile`, `.env.example`,
+`docker-compose.yml`, `docs/*`). Allow-listed modifications are tolerated but not published. Deletes
+are confined to the selected service roots, and pushes use normal fast-forward checks.
 
 When both sides contain work, do not overwrite either side. Merge them as two branches from their
 shared base:
