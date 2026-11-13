@@ -636,7 +636,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--state-dir", type=Path, default=Path("/var/lib/gba-sync"))
     parser.add_argument("--ai-state-dir", type=Path, default=Path("/var/lib/gba-ai-fleet"))
     parser.add_argument("--poll", type=float, default=20, help="seconds between status polls")
-    parser.add_argument("--busy-wait", type=float, default=900,
+    parser.add_argument("--busy-wait", type=float, default=2700,
                         help="seconds to wait when the server reports a synchronization in progress")
     parser.add_argument("--login-timeout", type=int, default=300)
     parser.add_argument("--status-timeout", type=int, default=900)
