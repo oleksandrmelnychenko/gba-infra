@@ -393,7 +393,7 @@ def test_wait_for_a_synchronization_is_bounded_and_the_cycle_says_it_ran_early(t
     state = json.loads((state_dir / "2026-09-07.json").read_text())
     assert state["sync_wait"] == {"waited_seconds": 5400, "still_running": True}
     assert state["status"] == "complete"
-    assert "still holds the lock after 5400 s" in capsys.readouterr().out
+    assert "still running after 5400 s (runner lock)" in capsys.readouterr().out
 
 
 def test_no_wait_without_the_option_without_a_lock_file_or_without_a_holder(tmp_path):
@@ -586,3 +586,171 @@ def test_check_with_only_reports_other_stages_as_not_requested(tmp_path, capsys)
     report = json.loads(capsys.readouterr().out)
     assert report["stages"]["pricing"] == "not requested"
     assert report["stages"]["products"]["source"] == "fallback"
+
+
+class FakeSyncServer:
+    def __init__(self, statuses, *, token_code=200, status_code=200, expire_first_token=False):
+        self.statuses, self.token_code, self.status_code = list(statuses), token_code, status_code
+        self.expire_first_token = expire_first_token
+        self.tokens, self.status_calls, self.seen = 0, 0, []
+
+    def __call__(self, url, *, data=None, headers=None, method=None, timeout=60):
+        self.seen.append((url, data, headers))
+        if url.endswith("/usermanagement/token"):
+            self.tokens += 1
+            assert json.loads(data) == {"Username": "svc", "Password": "s3cret-marker"}
+            if self.token_code != 200:
+                return self.token_code, b"{}"
+            return 200, json.dumps({"Body": {"AccessToken": f"t0ken-{self.tokens}"}}).encode()
+        assert url == "http://server/api/v1/uk/data/sync/status"
+        self.status_calls += 1
+        if self.expire_first_token and headers["Authorization"] == "Bearer t0ken-1":
+            return 401, b"{}"
+        if self.status_code != 200:
+            return self.status_code, b"{}"
+        busy = self.statuses.pop(0) if len(self.statuses) > 1 else self.statuses[0]
+        if isinstance(busy, Exception):
+            raise busy
+        return 200, json.dumps({"Body": {"IsInProgress": busy, "InMemorySynchronizationInProgress": busy}}).encode()
+
+
+@pytest.fixture
+def sync_credential(tmp_path):
+    path = tmp_path / "credential.json"
+    path.write_text(json.dumps({"Username": "svc", "Password": "s3cret-marker"}))
+    path.chmod(0o600)
+    with patch.object(refresh.sync_runner, "CREDENTIAL_OWNER", path.stat().st_uid):
+        yield path
+
+
+def ticking():
+    clock = [1000.0]
+    def nap(seconds):
+        clock[0] += seconds
+    return patch.object(refresh.time, "sleep", side_effect=nap), \
+        patch.object(refresh.time, "time", side_effect=lambda: clock[0])
+
+
+def test_cycle_waits_for_a_synchronization_started_from_the_console(tmp_path, sync_credential, capsys):
+    state_dir, sync_lock = tmp_path / "state", tmp_path / "run.lock"
+    server = FakeSyncServer([True, True, True, False])
+    nap, clock = ticking()
+    with nap, clock, patch.object(refresh.sync_runner, "http_request", side_effect=server), \
+            patch.object(refresh, "cycle_date", return_value="2026-09-07"), \
+            patch.object(refresh.subprocess, "run", side_effect=completing([])):
+        assert refresh.run(tmp_path, state_dir, wait_sync=5400, sync_lock=sync_lock,
+                           sync_server="http://server", sync_credential=sync_credential) == 0
+    state = json.loads((state_dir / "2026-09-07.json").read_text())
+    assert state["status"] == "complete"
+    assert state["sync_wait"] == {"waited_seconds": 60, "still_running": False, "waited_for": ["server status"]}
+    assert server.tokens == 1 and server.status_calls == 4
+    output = capsys.readouterr().out
+    assert "A synchronization is running (server status); waiting up to 5400 s" in output
+    assert "s3cret-marker" not in output and "t0ken" not in output
+    assert "s3cret-marker" not in json.dumps(state) and "t0ken" not in json.dumps(state)
+
+
+def test_server_wait_has_the_same_bound_as_the_lock_wait(tmp_path, sync_credential, capsys):
+    server = FakeSyncServer([True])
+    nap, clock = ticking()
+    with nap, clock, patch.object(refresh.sync_runner, "http_request", side_effect=server):
+        result = refresh.wait_for_sync(tmp_path / "run.lock", 5400,
+                                       probe=refresh.ServerSyncProbe("http://server/", sync_credential))
+    assert result == {"waited_seconds": 5400, "still_running": True, "waited_for": ["server status"]}
+    assert "still running after 5400 s (server status)" in capsys.readouterr().out
+
+
+def test_idle_server_and_free_lock_do_not_wait_and_leave_no_note(tmp_path, sync_credential):
+    server = FakeSyncServer([False])
+    with patch.object(refresh.time, "sleep") as nap, \
+            patch.object(refresh.sync_runner, "http_request", side_effect=server):
+        probe = refresh.ServerSyncProbe("http://server", sync_credential)
+        assert refresh.wait_for_sync(tmp_path / "run.lock", 5400, probe=probe) is None
+        assert refresh.wait_for_sync(tmp_path / "run.lock", 0, probe=probe) is None
+    nap.assert_not_called()
+    assert server.status_calls == 1 and server.tokens == 1
+
+
+@pytest.mark.parametrize("server, reason", [
+    (FakeSyncServer([OSError("connection refused")]), "OSError: connection refused"),
+    (FakeSyncServer([False], token_code=401), "the token call answered HTTP 401"),
+    (FakeSyncServer([False], token_code=503), "the token call answered HTTP 503"),
+    (FakeSyncServer([False], status_code=403), "the status call answered HTTP 403 without IsInProgress"),
+    (FakeSyncServer([False], status_code=502), "the status call answered HTTP 502 without IsInProgress"),
+])
+def test_unavailable_or_unauthorised_server_falls_back_to_the_lock_and_says_why(
+        tmp_path, sync_credential, capsys, server, reason):
+    state_dir, sync_lock = tmp_path / "state", tmp_path / "run.lock"
+    with patch.object(refresh.time, "sleep") as nap, \
+            patch.object(refresh.sync_runner, "http_request", side_effect=server), \
+            patch.object(refresh, "cycle_date", return_value="2026-09-07"), \
+            patch.object(refresh.subprocess, "run", side_effect=completing([])):
+        assert refresh.run(tmp_path, state_dir, wait_sync=5400, sync_lock=sync_lock,
+                           sync_server="http://server", sync_credential=sync_credential) == 0
+    nap.assert_not_called()
+    state = json.loads((state_dir / "2026-09-07.json").read_text())
+    assert state["status"] == "complete"
+    assert state["sync_wait"]["waited_seconds"] == 0 and state["sync_wait"]["still_running"] is False
+    assert state["sync_wait"]["waited_for"] == [] and reason in state["sync_wait"]["server_fallback"]
+    assert "only the runner lock" in capsys.readouterr().out
+
+
+def test_missing_or_unsafe_credential_falls_back_without_calling_the_server(tmp_path, sync_credential):
+    with patch.object(refresh.sync_runner, "http_request") as http:
+        absent = refresh.wait_for_sync(tmp_path / "run.lock", 5400,
+                                       probe=refresh.ServerSyncProbe("http://server", tmp_path / "absent.json"))
+        sync_credential.chmod(0o644)
+        unsafe = refresh.wait_for_sync(tmp_path / "run.lock", 5400,
+                                       probe=refresh.ServerSyncProbe("http://server", sync_credential))
+    http.assert_not_called()
+    assert "cannot be read" in absent["server_fallback"] and "is refused" in unsafe["server_fallback"]
+    assert absent["still_running"] is False and unsafe["waited_for"] == []
+
+
+def test_server_down_while_the_runner_holds_the_lock_keeps_the_lock_rule(tmp_path, sync_credential):
+    sync_lock = tmp_path / "run.lock"
+    server = FakeSyncServer([OSError("connection refused")])
+    with sync_lock.open("a") as holder:
+        fcntl.flock(holder, fcntl.LOCK_EX)
+        naps = []
+        def release(seconds):
+            naps.append(seconds)
+            if len(naps) == 2:
+                fcntl.flock(holder, fcntl.LOCK_UN)
+        with patch.object(refresh.time, "sleep", side_effect=release), \
+                patch.object(refresh.sync_runner, "http_request", side_effect=server):
+            result = refresh.wait_for_sync(sync_lock, 5400,
+                                           probe=refresh.ServerSyncProbe("http://server", sync_credential))
+    assert naps == [30, 30]
+    assert result["still_running"] is False and result["waited_for"] == ["runner lock"]
+    assert "connection refused" in result["server_fallback"]
+
+
+def test_expired_token_is_renewed_once_and_both_causes_are_named(tmp_path, sync_credential):
+    sync_lock = tmp_path / "run.lock"
+    server = FakeSyncServer([True, False], expire_first_token=True)
+    with sync_lock.open("a") as holder:
+        fcntl.flock(holder, fcntl.LOCK_EX)
+        def release(seconds):
+            fcntl.flock(holder, fcntl.LOCK_UN)
+        with patch.object(refresh.time, "sleep", side_effect=release), \
+                patch.object(refresh.sync_runner, "http_request", side_effect=server):
+            result = refresh.wait_for_sync(sync_lock, 5400,
+                                           probe=refresh.ServerSyncProbe("http://server", sync_credential))
+    assert server.tokens == 2
+    assert result["waited_for"] == ["runner lock", "server status"] and "server_fallback" not in result
+
+
+def test_timer_entry_point_checks_the_server_by_default_and_can_be_told_not_to(tmp_path):
+    with patch.object(refresh, "run", return_value=0) as run:
+        assert refresh.main(["--wait-sync", "5400", "--state-dir", str(tmp_path)]) == 0
+        assert run.call_args.kwargs["sync_server"] == "http://127.0.0.1:35981"
+        assert run.call_args.kwargs["sync_credential"] == Path("/etc/gba-sync/credential.json")
+        assert refresh.main(["--wait-sync", "5400", "--sync-server", "", "--state-dir", str(tmp_path)]) == 0
+        assert run.call_args.kwargs["sync_server"] == ""
+    with patch.object(refresh, "wait_for_sync", return_value=None) as wait, \
+            patch.object(refresh, "cycle_date", return_value="2026-09-07"), \
+            patch.object(refresh.subprocess, "run", side_effect=completing([])):
+        assert refresh.run(tmp_path, tmp_path / "state", sync_server="http://server",
+                           sync_credential=tmp_path / "c.json") == 0
+        assert wait.call_args.kwargs == {}

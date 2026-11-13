@@ -35,10 +35,16 @@ swallow the day's cycle. Exit codes: 0 done or nothing to do, 1 failed,
 
 Synchronization. --wait-sync waits, before the fleet lock is taken, while the
 1C synchronization runner holds its own lock (the nightly run starts at 02:00
-and normally ends before 05:00). The wait is bounded: when the runner still
-holds the lock after the limit the cycle starts on the data it has, and
-`sync_wait` in the cycle file says so. The runner's own forced refresh does not
-pass --wait-sync, so it never waits for itself.
+and normally ends before 05:00) or while the server's synchronization status
+says IsInProgress, which also covers a synchronization started from the console.
+The status is read with the service credential (--sync-credential) from
+--sync-server. The wait is bounded by the same limit for both: when a
+synchronization is still running after it the cycle starts on the data it has,
+and `sync_wait` in the cycle file says so and names what it waited for. When the
+status cannot be read (server down, credential missing or refused) only the
+lock rule applies and `sync_wait.server_fallback` records why. The credential
+and the token are never printed. The runner's own forced refresh does not pass
+--wait-sync, so it never waits for itself.
 
 Single stages. --only <stage>[,<stage>] refreshes just the named stages again,
 under the same lock, health gate, unit runtime and persistence confirmation as
@@ -67,6 +73,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ai_fleet_health as health
+import gba_sync_run as sync_runner
 
 STAGES = ("nba_feedback", "reco", "procure", "solvency", "pricing", "products", "forecast", "nba")
 NEEDS_RECO_WEB = ("nba_feedback", "nba")
@@ -142,20 +149,92 @@ def sync_running(lock_path: Path) -> bool:
         return False
 
 
-def wait_for_sync(lock_path: Path, limit: float, poll: float = 30) -> dict | None:
-    if limit <= 0 or not sync_running(lock_path):
+class ServerSyncProbe:
+    """Ask the server whether a synchronization is in progress; None with a reason when it cannot say."""
+
+    def __init__(self, server: str, credential: Path, timeout: float = 20) -> None:
+        self.server, self.credential, self.timeout = server.rstrip("/"), credential, timeout
+        self.token: str | None = None
+        self.reason: str | None = None
+
+    def fetch_token(self) -> str:
+        login = sync_runner.read_credential(self.credential)
+        code, raw = sync_runner.http_request(
+            self.server + "/api/v1/uk/usermanagement/token", data=login,
+            headers={"Content-Type": "application/json"}, timeout=self.timeout)
+        body = sync_runner.parse_json(raw).get("Body")
+        if code != 200 or not isinstance(body, dict) or not body.get("AccessToken"):
+            raise RuntimeError(f"the token call answered HTTP {code}")
+        return str(body["AccessToken"])
+
+    def read_status(self) -> tuple[int, dict]:
+        if self.token is None:
+            self.token = self.fetch_token()
+        code, raw = sync_runner.http_request(
+            self.server + "/api/v1/uk/data/sync/status",
+            headers={"Authorization": "Bearer " + self.token, "X-Time-Zone": "Europe/Kyiv"}, timeout=self.timeout)
+        return code, sync_runner.parse_json(raw)
+
+    def in_progress(self) -> bool | None:
+        try:
+            code, answer = self.read_status()
+            if code in (401, 403):
+                self.token = None
+                code, answer = self.read_status()
+            body = answer.get("Body")
+            if code != 200 or not isinstance(body, dict) or not isinstance(body.get("IsInProgress"), bool):
+                raise RuntimeError(f"the status call answered HTTP {code} without IsInProgress")
+        except Exception as exc:
+            self.token = None
+            self.reason = f"{type(exc).__name__}: {str(exc)[:200]}"
+            return None
+        self.reason = None
+        return body["IsInProgress"]
+
+
+def wait_for_sync(lock_path: Path, limit: float, poll: float = 30, *,
+                  probe: ServerSyncProbe | None = None) -> dict | None:
+    if limit <= 0:
         return None
+    waited_for: list[str] = []
+    fallback: str | None = None
+
+    def running() -> bool:
+        nonlocal fallback
+        lock = sync_running(lock_path)
+        server = probe.in_progress() if probe is not None else False
+        if probe is not None and server is None and fallback != probe.reason:
+            fallback = probe.reason
+            print(f"The server synchronization status is unavailable ({fallback}); "
+                  f"only the runner lock {lock_path} decides", flush=True)
+        for name, busy in (("runner lock", lock), ("server status", server)):
+            if busy and name not in waited_for:
+                waited_for.append(name)
+        return lock or bool(server)
+
+    def report(result: dict | None) -> dict | None:
+        if probe is None:
+            return result
+        result = result or ({"waited_seconds": 0, "still_running": False} if fallback else None)
+        if result is not None:
+            result["waited_for"] = list(waited_for)
+            if fallback:
+                result["server_fallback"] = fallback
+        return result
+
+    if not running():
+        return report(None)
     started = time.time()
-    print(f"A synchronization run holds {lock_path}; waiting up to {limit:g} s for it", flush=True)
+    print(f"A synchronization is running ({', '.join(waited_for)}); waiting up to {limit:g} s for it", flush=True)
     while True:
         waited = round(time.time() - started)
-        if not sync_running(lock_path):
+        if not running():
             print(f"The synchronization run ended after {waited} s of waiting", flush=True)
-            return {"waited_seconds": waited, "still_running": False}
+            return report({"waited_seconds": waited, "still_running": False})
         if waited >= limit:
-            print(f"The synchronization run still holds the lock after {waited} s; "
+            print(f"The synchronization is still running after {waited} s ({', '.join(waited_for)}); "
                   f"the cycle starts on the data it has", flush=True)
-            return {"waited_seconds": waited, "still_running": True}
+            return report({"waited_seconds": waited, "still_running": True})
         time.sleep(poll)
 
 
@@ -213,9 +292,13 @@ def parse_only(value: str | None) -> tuple[str, ...]:
 
 def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = None,
         fresh_since: datetime | None = None, wait_lock: float = 0, wait_sync: float = 0,
-        sync_lock: Path = Path("/var/lib/gba-sync/run.lock"), only: tuple[str, ...] = ()) -> int:
+        sync_lock: Path = Path("/var/lib/gba-sync/run.lock"), only: tuple[str, ...] = (),
+        sync_server: str = "", sync_credential: Path | None = None) -> int:
     state_dir.mkdir(parents=True, exist_ok=True)
-    sync_wait = wait_for_sync(sync_lock, wait_sync)
+    if sync_server and sync_credential is not None and wait_sync > 0:
+        sync_wait = wait_for_sync(sync_lock, wait_sync, probe=ServerSyncProbe(sync_server, sync_credential))
+    else:
+        sync_wait = wait_for_sync(sync_lock, wait_sync)
     with (state_dir / "refresh.lock").open("a") as lock:
         if not acquire(lock, wait_lock):
             print("A fleet refresh is already running; the lock could not be taken", flush=True)
@@ -456,6 +539,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--wait-sync", type=float, default=0, metavar="SECONDS",
                         help="wait this long for a running 1C synchronization before the cycle")
     parser.add_argument("--sync-lock", type=Path, default=Path("/var/lib/gba-sync/run.lock"))
+    parser.add_argument("--sync-server", default="http://127.0.0.1:35981",
+                        help="with --wait-sync: also wait while this server reports a synchronization; '' disables")
+    parser.add_argument("--sync-credential", type=Path, default=Path("/etc/gba-sync/credential.json"),
+                        help="service credential (root, 0600) used to read the synchronization status")
     parser.add_argument("--check", action="store_true", help="read-only report; starts nothing")
     parser.add_argument("--only", default="", metavar="STAGE[,STAGE]",
                         help="refresh only these stages again (" + ", ".join(STAGES) + "); the others are left alone")
@@ -479,7 +566,8 @@ def main(argv: list[str] | None = None) -> int:
         return check(args.root, args.state_dir, day=day, only=only)
     return run(args.root, args.state_dir, force=args.force, day=day,
                fresh_since=fresh_since, wait_lock=args.wait_lock, wait_sync=args.wait_sync,
-               sync_lock=args.sync_lock, only=only)
+               sync_lock=args.sync_lock, only=only,
+               sync_server=args.sync_server, sync_credential=args.sync_credential)
 
 
 if __name__ == "__main__":
