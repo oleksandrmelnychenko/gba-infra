@@ -435,3 +435,83 @@ def test_next_base_waits_until_the_server_is_idle_after_its_run_is_terminal(stan
         assert job.run() == 0
     assert lingering["amg"] == 0 and lingering["fenix"] == 0
     assert fake.started == ["amg", "fenix"]
+
+
+def busy_stand(fake, statuses):
+    remaining = list(statuses)
+    def answering(url, **kwargs):
+        if url.endswith("/data/sync/status"):
+            body = remaining.pop(0) if len(remaining) > 1 else remaining[0]
+            return fake.answer({"LastTerminalRun": fake.terminal, **body})
+        return fake(url, **kwargs)
+    return answering
+
+
+FLAG_ONLY = {"IsInProgress": True, "InMemorySynchronizationInProgress": True, "IsGlobalLockHeld": False,
+             "IsGlobalLockStatusAvailable": True, "ActiveRun": None}
+
+
+def waiting_clock():
+    clock = [1000.0]
+    def nap(seconds):
+        clock[0] += seconds
+    return patch.object(runner.time, "sleep", side_effect=nap), \
+        patch.object(runner.time, "time", side_effect=lambda: clock[0])
+
+
+def test_flag_without_a_run_for_the_whole_wait_is_reported_as_a_stale_flag(stand):
+    fake, job, login = stand("light", "--consume-login", "--busy-wait", "900")
+    nap, clock = waiting_clock()
+    with nap, clock, patch.object(runner, "http_request", side_effect=busy_stand(fake, [FLAG_ONLY])):
+        assert job.run() == runner.EXIT_STALE_FLAG == 5
+    result = latest(job)
+    assert result["ok"] is False and result["exit"] == 5
+    assert result["failure"].startswith(
+        "сервер повідомляє про синхронізацію без активного запуску (завислий прапорець)")
+    assert "inMemory=True, globalLockHeld=False" in result["failure"] and "activeRun=None" in result["failure"]
+    assert "did not restart the server" in result["failure"]
+    assert fake.started == [] and login.exists()
+    polls = [line for line in (job.state_dir / "run.log").read_text().splitlines() if '"check": "sync"' in line]
+    assert len(polls) > 40
+    assert not any("restart" in url or "/start/" in url for url in fake.calls)
+
+
+@pytest.mark.parametrize("other", [
+    {**FLAG_ONLY, "IsGlobalLockHeld": True},
+    {**FLAG_ONLY, "IsGlobalLockHeld": True, "IsGlobalLockStatusAvailable": False},
+    {**FLAG_ONLY, "ActiveRun": {"PipelineRunId": "abc"}},
+    {**FLAG_ONLY, "InMemorySynchronizationInProgress": False, "IsGlobalLockHeld": True},
+    {"IsInProgress": True},
+])
+def test_busy_with_a_lock_a_run_or_unknown_flags_stays_plain_busy(stand, other):
+    for statuses in ([other], [other, FLAG_ONLY], [FLAG_ONLY, other, FLAG_ONLY]):
+        fake, job, _ = stand("light", "--busy-wait", "900")
+        nap, clock = waiting_clock()
+        with nap, clock, patch.object(runner, "http_request", side_effect=busy_stand(fake, statuses)):
+            assert job.run() == runner.EXIT_BUSY
+        result = latest(job)
+        assert result["exit"] == runner.EXIT_BUSY and "завислий" not in result["failure"]
+        assert "already in progress for more than 900 s" in result["failure"] and "inMemory=" in result["failure"]
+        assert fake.started == []
+
+
+def test_lock_held_briefly_at_the_start_does_not_stop_the_run(stand):
+    fake, job, _ = stand("light", "--busy-wait", "900")
+    held = {**FLAG_ONLY, "InMemorySynchronizationInProgress": False, "IsGlobalLockHeld": True}
+    remaining = [held, held]
+    def answering(url, **kwargs):
+        if url.endswith("/data/sync/status") and remaining:
+            return fake.answer({"LastTerminalRun": fake.terminal, **remaining.pop()})
+        return fake(url, **kwargs)
+    with patch.object(runner, "http_request", side_effect=answering):
+        assert job.run() == 0
+    assert fake.started == ["amg", "fenix"] and latest(job)["ok"] is True
+
+
+def test_dry_run_names_the_stale_flag_and_writes_nothing(stand, capsys):
+    fake, job, _ = stand("light", "--dry-run")
+    with patch.object(runner, "http_request", side_effect=busy_stand(fake, [FLAG_ONLY])):
+        assert job.run() == runner.EXIT_PREFLIGHT
+    output = capsys.readouterr().out
+    assert "PROBLEM a synchronization is already in progress: сервер повідомляє про синхронізацію" in output
+    assert not job.state_dir.exists() and fake.started == []

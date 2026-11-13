@@ -57,8 +57,14 @@ Failure. Every failed run leaves "ok": false and a one-line "failure" in
 latest.json and exits non-zero, so the unit is failed as well. Only a run that
 found another run holding the lock leaves latest.json to that run.
 
+Stale flag. When the server reports a synchronization for the whole busy wait
+with only its in-memory flag set (no active run, the global lock free and its
+state readable), no run exists and the flag will not clear by itself. The runner
+does not restart the server: it fails with exit 5 and the failure text in
+STALE_FLAG_FAILURE, so the cause is named instead of "busy".
+
 Exit codes: 0 done, 1 failed, 2 the credential is unusable, 3 busy,
-4 pre-flight failed.
+4 pre-flight failed, 5 the server's in-memory flag is stale.
 """
 from __future__ import annotations
 
@@ -81,7 +87,8 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ai_fleet_health as health
 
-EXIT_FAILED, EXIT_LOGIN, EXIT_BUSY, EXIT_PREFLIGHT = 1, 2, 3, 4
+EXIT_FAILED, EXIT_LOGIN, EXIT_BUSY, EXIT_PREFLIGHT, EXIT_STALE_FLAG = 1, 2, 3, 4, 5
+STALE_FLAG_FAILURE = "сервер повідомляє про синхронізацію без активного запуску (завислий прапорець)"
 CREDENTIAL_OWNER, CREDENTIAL_MODE = 0, 0o600
 FLEET_LOCK_BUSY = 75
 KYIV = ZoneInfo("Europe/Kyiv")
@@ -125,6 +132,19 @@ def started_after(run: dict, instant: datetime) -> bool:
     if started.tzinfo is None:
         started = started.replace(tzinfo=timezone.utc)
     return (instant - started).total_seconds() <= 30
+
+
+def only_in_memory_flag(status: dict) -> bool:
+    return bool(status.get("IsInProgress")) and status.get("InMemorySynchronizationInProgress") is True \
+        and status.get("IsGlobalLockHeld") is False and status.get("IsGlobalLockStatusAvailable") is not False \
+        and not status.get("ActiveRun")
+
+
+def busy_cause(status: dict) -> str:
+    return (f"inMemory={status.get('InMemorySynchronizationInProgress')}, "
+            f"globalLockHeld={status.get('IsGlobalLockHeld')}, "
+            f"globalLockStatusAvailable={status.get('IsGlobalLockStatusAvailable')}, "
+            f"activeRun={run_key((status.get('ActiveRun') or {}).get('PipelineRunId')) or None}")
 
 
 def iso_now() -> str:
@@ -491,7 +511,9 @@ class Runner:
             except LoginError as exc:
                 return self.fail(EXIT_LOGIN, str(exc))
             self.log(step="login", ok=True, source=self.source)
-            busy_deadline = time.time() + (0 if self.dry else self.args.busy_wait)
+            busy_since = time.time()
+            busy_deadline = busy_since + (0 if self.dry else self.args.busy_wait)
+            busy_polls, flag_only_polls = 0, 0
             while True:
                 try:
                     status = self.status()
@@ -508,13 +530,19 @@ class Runner:
                          activeType=status.get("ActiveSynchronizationType"), startedBy=status.get("StartedBy"),
                          lastTerminalRun=run_key(last.get("PipelineRunId")) or None,
                          lastTerminalStatus=last.get("Status"), lastCompletedAt=last.get("CompletedAtUtc"))
+                if busy:
+                    busy_polls += 1
+                    flag_only_polls += only_in_memory_flag(status)
                 if not busy or time.time() >= busy_deadline:
                     break
                 time.sleep(max(self.args.poll, 15))
+            stale_flag = busy and flag_only_polls == busy_polls
             problems = self.preflight()
             if self.dry:
                 if busy:
-                    problems.insert(0, "a synchronization is already in progress")
+                    problems.insert(0, "a synchronization is already in progress"
+                                    + (f": {STALE_FLAG_FAILURE}" if stale_flag else "")
+                                    + f" ({busy_cause(status)})")
                 for number, step in enumerate(self.plan(), 1):
                     print(f"PLAN {number}. {step}", flush=True)
                 for problem in problems:
@@ -522,9 +550,14 @@ class Runner:
                 print(f"DRY RUN: nothing was started, the {self.source} was not deleted, no state was written; "
                       + ("the run would stop at pre-flight" if problems else "the run would proceed"), flush=True)
                 return EXIT_PREFLIGHT if problems else 0
+            if stale_flag:
+                return self.fail(EXIT_STALE_FLAG, f"{STALE_FLAG_FAILURE}: {busy_polls} status polls in "
+                                                  f"{round(time.time() - busy_since)} s, {busy_cause(status)}; "
+                                                  f"this run started nothing and did not restart the server")
             if busy:
                 return self.fail(EXIT_BUSY, f"a synchronization was already in progress for more than "
-                                            f"{self.args.busy_wait:g} s; this run started nothing")
+                                            f"{self.args.busy_wait:g} s; this run started nothing "
+                                            f"({busy_cause(status)})")
             if problems:
                 self.log(step="start", ok=False, reason="pre-flight failed", problems=problems)
                 self.finish(False, {}, {}, problems)
