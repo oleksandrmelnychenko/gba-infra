@@ -98,6 +98,13 @@ def refresh(stage: str, as_of: str, token: str) -> dict:
         return True
 
     cache.get, cache.set = fresh_get, checked_set
+    if hasattr(cache, "get_many"):
+        cache.get_many = lambda keys: [fresh_get(key) for key in keys]
+    if hasattr(cache, "set_many"):
+        def checked_set_many(items, ttl=None):
+            for key, value in items.items():
+                checked_set(key, value, ttl=ttl)
+        cache.set_many = checked_set_many
     result = {}
     if stage == "products":
         from app.api import main
