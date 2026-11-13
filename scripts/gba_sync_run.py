@@ -44,8 +44,9 @@ pre-flight stops the run before an hour is spent.
 Waits are bounded: status calls, the start of a run, a whole session and the
 fleet lock each have a limit and a message that says which one expired.
 
---consume-login deletes the one-time login file only after it produced a
-token. --dry-run performs every read-only check, prints the plan and starts
+--consume-login deletes the one-time login file only after pre-flight passed and
+the run is about to start; a busy server is polled for --busy-wait seconds first.
+--dry-run performs every read-only check, prints the plan and starts
 nothing; it never deletes the login file and writes no state.
 
 Exit codes: 0 done, 1 failed, 2 the login file is unusable, 3 busy,
@@ -162,8 +163,10 @@ class Runner:
                         f"no token within {self.args.login_timeout} s ({str(exc)[:200]}); "
                         f"the login file was left in place") from None
                 time.sleep(self.args.poll)
+
+    def consume_login(self) -> None:
         if self.args.consume_login and not self.dry:
-            path.unlink()
+            self.args.login_file.unlink(missing_ok=True)
 
     def fetch_token(self) -> str:
         code, raw = http_request(
@@ -442,17 +445,28 @@ class Runner:
             except LoginError as exc:
                 self.log(step="start", ok=False, reason=str(exc))
                 return EXIT_LOGIN
-            self.log(step="login", ok=True, consumed=bool(self.args.consume_login and not self.dry))
-            try:
-                status = self.status()
-            except RunnerError as exc:
-                self.log(step="start", ok=False, reason=str(exc))
-                return EXIT_PREFLIGHT
-            last = status.get("LastTerminalRun") or {}
-            self.log(step="preflight", check="sync", inProgress=bool(status.get("IsInProgress")),
-                     lastTerminalRun=run_key(last.get("PipelineRunId")) or None,
-                     lastTerminalStatus=last.get("Status"), lastCompletedAt=last.get("CompletedAtUtc"))
-            busy = bool(status.get("IsInProgress"))
+            self.log(step="login", ok=True)
+            busy_deadline = time.time() + (0 if self.dry else self.args.busy_wait)
+            while True:
+                try:
+                    status = self.status()
+                except RunnerError as exc:
+                    self.log(step="start", ok=False, reason=str(exc))
+                    return EXIT_PREFLIGHT
+                last = status.get("LastTerminalRun") or {}
+                active = status.get("ActiveRun") or {}
+                busy = bool(status.get("IsInProgress"))
+                self.log(step="preflight", check="sync", inProgress=busy,
+                         inMemory=status.get("InMemorySynchronizationInProgress"),
+                         globalLockHeld=status.get("IsGlobalLockHeld"),
+                         globalLockStatusAvailable=status.get("IsGlobalLockStatusAvailable"),
+                         activeRun=run_key(active.get("PipelineRunId")) or None,
+                         activeType=status.get("ActiveSynchronizationType"), startedBy=status.get("StartedBy"),
+                         lastTerminalRun=run_key(last.get("PipelineRunId")) or None,
+                         lastTerminalStatus=last.get("Status"), lastCompletedAt=last.get("CompletedAtUtc"))
+                if not busy or time.time() >= busy_deadline:
+                    break
+                time.sleep(max(self.args.poll, 15))
             problems = self.preflight()
             if self.dry:
                 if busy:
@@ -471,6 +485,7 @@ class Runner:
                 self.log(step="start", ok=False, reason="pre-flight failed", problems=problems)
                 self.finish(False, {}, {}, problems)
                 return EXIT_PREFLIGHT
+            self.consume_login()
             self.log(step="start", window=[self.args.date_from, self.args.date_to] if self.args.date_from
                      else "server daily lookback")
             bases: dict[str, dict] = {}
@@ -522,6 +537,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--state-dir", type=Path, default=Path("/var/lib/gba-sync"))
     parser.add_argument("--ai-state-dir", type=Path, default=Path("/var/lib/gba-ai-fleet"))
     parser.add_argument("--poll", type=float, default=20, help="seconds between status polls")
+    parser.add_argument("--busy-wait", type=float, default=900,
+                        help="seconds to wait when the server reports a synchronization in progress")
     parser.add_argument("--login-timeout", type=int, default=300)
     parser.add_argument("--status-timeout", type=int, default=900)
     parser.add_argument("--start-grace", type=int, default=300)

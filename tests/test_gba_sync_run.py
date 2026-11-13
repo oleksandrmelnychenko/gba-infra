@@ -87,7 +87,7 @@ def stand(tmp_path):
         args = runner.build_parser().parse_args([
             "--mode", mode, "--login-file", str(login), "--state-dir", str(tmp_path / "sync"),
             "--ai-state-dir", str(tmp_path / "fleet"), "--server", "http://server", "--shop-api", "http://shop",
-            "--start-grace", "0", "--status-timeout", "0", "--login-timeout", "0", "--search-settle", "0",
+            "--start-grace", "0", "--status-timeout", "0", "--login-timeout", "0", "--busy-wait", "0", "--search-settle", "0",
             *extra])
         return fake, runner.Runner(args), login
     with patch.object(runner.time, "sleep"), \
@@ -173,6 +173,7 @@ def test_busy_server_and_unavailable_status_stop_before_any_session(stand):
     fake, job, _ = stand("light", busy=True)
     assert execute(fake, job) == runner.EXIT_BUSY
     assert fake.started == []
+    assert job.args.login_file.exists()
     fake, job, _ = stand("light")
     def broken(url, **kwargs):
         if "status" in url:
