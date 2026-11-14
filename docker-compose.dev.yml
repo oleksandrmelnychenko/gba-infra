@@ -66,7 +66,7 @@ services:
       GBA_DATASYNC_ALLOW_OUTCOME_SETTLEMENT_BACKFILL: "true"
       GBA_ALLOW_FIXED_HISTORICAL_STOCK_TRANSITION: "1"
       DataSync__ProductHistoryBatchRetention__MinimumAgeHours: "0"
-      DataSync__BatchHistory__Mode: "Shadow"
+      DataSync__BatchHistory__Mode: "Mirror"
       DataSync__ImportedDocumentResponsibleUserNetUid: "37E979EB-A58D-4BEB-994B-121B119844ED"
       DataSync__ImportedDocumentUnmatchedResponsibleUserNetUid: "123E9F21-D726-49CB-BAD9-ECDEDC0E4D3F"
       DataSync__FenixClientCataloguePageSize: "512"
