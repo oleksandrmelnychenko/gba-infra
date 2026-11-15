@@ -1,0 +1,9 @@
+[Unit]
+Description=Refresh the GBA AI fleet when the nightly 1C synchronization writes its result
+
+[Path]
+PathChanged=/var/lib/gba-sync/latest.json
+Unit=gba-ai-fleet-after-sync.service
+
+[Install]
+WantedBy=multi-user.target

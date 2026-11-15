@@ -2,9 +2,9 @@
 
 Every night at 02:00 Europe/Kyiv `gba-sync-nightly.timer` starts
 `gba-sync@light.service`: AMG, then Fenix, daily sessions with the server's own
-lookback. It takes about two hours. Nothing downstream is refreshed by this run;
-the shop index rebuilds at 03:00 and the AI fleet refreshes at 05:00 on their
-own schedules.
+lookback. It takes about two hours. The runner itself refreshes nothing
+downstream; the shop index rebuilds at 03:00 on its own schedule, and the AI
+fleet refreshes as soon as the run has written `latest.json` (see below).
 
 The timer has `Persistent=false`: a night that was missed (host down, timer
 disabled) is not made up during the day. Start it by hand when that is wanted.
@@ -115,15 +115,42 @@ hand outside QA hours (the flag lives in the actor's memory) and start
 `gba-sync@light` again; report the case as a server defect with the three flags
 from `run.log`.
 
-## The 05:00 AI cycle
+## The AI cycle after the synchronization
 
-`gba-ai-fleet-refresh.service` runs `refresh_ai_fleet.py --wait-sync 5400`. The
-cycle waits, at most 90 minutes in total, while either is true:
+`gba-ai-fleet-after-sync.path` watches `/var/lib/gba-sync/latest.json`
+(`PathChanged`), which the runner writes once at the end of every run, and
+starts `gba-ai-fleet-after-sync.service`:
+`refresh_ai_fleet.py --after-sync /var/lib/gba-sync/latest.json --wait-sync 21600 --wait-lock 21600`.
+
+- Only a `light` run with at least one base `ok` is followed; `full` and
+  `refresh` force their own AI refresh downstream, and a run with no base
+  finished changed nothing.
+- The cycle is the Kyiv calendar date of `finished_at` (a sync ending at 02:45
+  refreshes today's cycle); a result whose date is no longer an allowed cycle
+  date is ignored.
+- The run is forced with `--fresh-since finished_at`: a cycle that started after
+  the synchronization finished is not repeated (a second trigger for the same
+  result does nothing; a failed run is resumed by `Restart=on-failure`), while a
+  cycle that started earlier, such as the 05:00 run before a late second sync,
+  is recomputed on the new data.
+- After its run the service reads `latest.json` again and follows a result
+  written meanwhile, because a path trigger that arrives while the service is
+  active is lost.
+
+`gba-ai-fleet-refresh.timer` at 05:00 is the fallback for a night without a
+synchronization result to follow. When the after-sync run has completed today's
+cycle it does nothing. Both services run `--wait-sync 21600`: they wait, at most
+six hours, while either is true:
 
 - the synchronization runner holds `/var/lib/gba-sync/run.lock`;
 - the server's `/api/v1/uk/data/sync/status` says `IsInProgress` (read with the
   service credential), which also covers a synchronization started from the
   console.
+
+A 05:00 run that waited for a late synchronization starts after it finished, so
+the after-sync run triggered by the same result finds that cycle fresh and does
+not repeat it; whichever takes the fleet lock first runs, the other finds the
+cycle complete.
 
 `sync_wait` in `/var/lib/gba-ai-fleet/<day>.json` records the wait:
 `waited_seconds`, `still_running` (the cycle started on the data it had),
@@ -139,7 +166,8 @@ file. The 00:00 UTC stock snapshot also reads as busy while it runs.
 |---|---|---|
 | 02:00 | `gba-sync-nightly.timer` → `gba-sync@light` | about two hours; each session ends with up to 15 minutes of batch-history retention |
 | 04:15 | `gba-sql-statistics@dev.timer` | drop-in `gba-sql-statistics@dev.timer.d/after-sync.conf`; the service is ordered after `gba-sync@*`, so it queues until a running sync ends; no catch-up by day (`Persistent=false`) |
-| 05:00 | `gba-ai-fleet-refresh.timer` | waits for a synchronization as described above |
+| end of sync | `gba-ai-fleet-after-sync.path` → `gba-ai-fleet-after-sync.service` | light run with a finished base: forced cycle of the Kyiv calendar date of `finished_at` |
+| 05:00 | `gba-ai-fleet-refresh.timer` | fallback; waits for a running synchronization; nothing to do when the cycle is complete |
 | 06:15 | `gba-e2e-nightly.timer` | ordered after the sync, the statistics and the AI cycle |
 
 Until 14.11 the statistics ran at 03:30 and the E2E suite at 02:30, inside the
@@ -170,12 +198,13 @@ To retire the account, delete the user `svc-sync-dev` in the console
 
 ```bash
 install -m 0644 systemd/gba-sync@.service systemd/gba-sync-nightly.timer \
-  systemd/gba-ai-fleet-refresh.service systemd/gba-e2e-nightly.service \
-  systemd/gba-e2e-nightly.timer /etc/systemd/system/
+  systemd/gba-ai-fleet-refresh.service systemd/gba-ai-fleet-refresh.timer \
+  systemd/gba-ai-fleet-after-sync.path systemd/gba-ai-fleet-after-sync.service \
+  systemd/gba-e2e-nightly.service systemd/gba-e2e-nightly.timer /etc/systemd/system/
 install -d /etc/systemd/system/gba-sql-statistics@dev.timer.d /etc/systemd/system/gba-sql-statistics@dev.service.d
 install -m 0644 systemd/gba-sql-statistics@dev.timer.d/after-sync.conf /etc/systemd/system/gba-sql-statistics@dev.timer.d/
 install -m 0644 systemd/gba-sql-statistics@dev.service.d/after-sync.conf /etc/systemd/system/gba-sql-statistics@dev.service.d/
 systemctl daemon-reload
-systemctl enable --now gba-sync-nightly.timer
+systemctl enable --now gba-sync-nightly.timer gba-ai-fleet-after-sync.path
 systemctl restart gba-e2e-nightly.timer gba-sql-statistics@dev.timer
 ```

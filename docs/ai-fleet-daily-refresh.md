@@ -1,7 +1,9 @@
 # Щоденне оновлення AI-флоту
 
-`gba-ai-fleet-refresh.timer` запускає єдиний цикл щодня о **05:00 Europe/Kyiv**.
-`Persistent=true` наздоганяє пропущений запуск після простою. Нульова випадкова
+Щоденний цикл запускає `gba-ai-fleet-after-sync.path`, щойно нічна синхронізація
+з 1С записала `/var/lib/gba-sync/latest.json` (див. нижче). `gba-ai-fleet-refresh.timer`
+о **05:00 Europe/Kyiv** — запасний запуск на ніч без синхронізації; якщо цикл дня
+вже завершено, він нічого не робить. `Persistent=true` наздоганяє пропущений запуск після простою. Нульова випадкова
 затримка; календар враховує перехід на літній і зимовий час.
 
 Етапи: зворотний зв'язок NBA → незалежні оновлення Reco, Procure, Solvency,
@@ -22,7 +24,7 @@ Pricing, Products і Forecast → генерація NBA. До трьох нез
 - Pricing, Solvency, Forecast і Products змінюють покоління ключів рівно о 05:00:
   кеш попереднього циклу після цього часу не читається.
 
-Цикл починається о 05:00, а завершення залежить від обсягу даних. `status=complete`
+Цикл починається після синхронізації (або о 05:00), а завершення залежить від обсягу даних. `status=complete`
 записується лише після завершення всіх етапів. Звіт кожного дня та логи зберігаються
 в `/var/lib/gba-ai-fleet/YYYY-MM-DD.json` і `YYYY-MM-DD-<stage>.log`.
 `latest.json` — останній повністю завершений цикл; для поточного стану дивитися
@@ -45,16 +47,22 @@ systemctl start gba-ai-fleet-refresh.service
 python3 /root/projects/gba-infra/scripts/refresh_ai_fleet.py --force
 ```
 
-Розгортання таймера: скопіювати файли `systemd/gba-ai-fleet-refresh.*` у
-`/etc/systemd/system`, виконати `daemon-reload`, увімкнути таймер. Окремі щоденні
+Розгортання таймера: скопіювати файли `systemd/gba-ai-fleet-refresh.*` і
+`systemd/gba-ai-fleet-after-sync.*` у `/etc/systemd/system`, виконати `daemon-reload`,
+увімкнути таймер і `gba-ai-fleet-after-sync.path`. Окремі щоденні
 Reco/NBA schedulers вимкнені; для Procure scheduler встановлено
 `FLEET_MANAGED_REFRESH=true`, що залишає watchdog і прибирає дубльовані cron jobs.
 Щотижневі retrain timers не змінюються.
 
-Юніт запускає скрипт із `--wait-sync 5400`: поки нічна синхронізація з 1С
-(`gba-sync-nightly.timer`, 02:00) тримає `/var/lib/gba-sync/run.lock`, цикл чекає
-не довше 90 хвилин і потім стартує; поле `sync_wait` у файлі циклу показує, скільки
-чекали і чи синхронізація ще тривала. Докладніше: `docs/sync-nightly.md`.
+`gba-ai-fleet-after-sync.service` запускає скрипт із
+`--after-sync /var/lib/gba-sync/latest.json`: лише після light-запуску, у якому
+хоча б одна база завершилась успішно, примусово рахує цикл календарної дати
+`finished_at` за Києвом із `--fresh-since finished_at`, тож цикл, що стартував після
+завершення синхронізації, не повторюється, а невдалий — продовжується. Обидва юніти
+мають `--wait-sync 21600`: поки синхронізація тримає `/var/lib/gba-sync/run.lock`
+або сервер повідомляє `IsInProgress`, цикл чекає до шести годин; поле `sync_wait`
+у файлі циклу показує, скільки чекали і чи синхронізація ще тривала. Докладніше:
+`docs/sync-nightly.md`.
 
 Рекомендації продажу потребують явного `clientAgreementNetId`. Історія клієнта,
 наявність товару і ціна відповідають цьому договору. Pricing повертає

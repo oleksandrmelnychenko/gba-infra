@@ -1,5 +1,5 @@
 [Unit]
-Description=Refresh the GBA AI fleet every day at 05:00 Kyiv
+Description=Fallback GBA AI fleet refresh at 05:00 Kyiv when no synchronization triggered one
 
 [Timer]
 OnCalendar=*-*-* 05:00:00 Europe/Kyiv

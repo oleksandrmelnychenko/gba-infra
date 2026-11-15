@@ -430,7 +430,7 @@ def test_wait_for_the_synchronization_happens_before_the_fleet_lock_is_taken(tmp
 def test_timer_unit_waits_for_the_synchronization_and_the_runner_does_not_wait_for_itself():
     root = Path(__file__).resolve().parents[1]
     unit = (root / "systemd/gba-ai-fleet-refresh.service").read_text()
-    assert "refresh_ai_fleet.py --wait-sync 5400 --wait-lock 21600" in unit
+    assert "refresh_ai_fleet.py --wait-sync 21600 --wait-lock 21600" in unit
     assert "--wait-sync" not in (root / "scripts/gba_sync_run.py").read_text()
 
 
@@ -754,3 +754,147 @@ def test_timer_entry_point_checks_the_server_by_default_and_can_be_told_not_to(t
         assert refresh.run(tmp_path, tmp_path / "state", sync_server="http://server",
                            sync_credential=tmp_path / "c.json") == 0
         assert wait.call_args.kwargs == {}
+
+
+def sync_result(path, *, mode="light", bases=None, finished_at="2026-11-15T06:52:55+02:00", run="r1"):
+    bases = {"amg": {"ok": True}, "fenix": {"ok": True}} if bases is None else bases
+    path.write_text(json.dumps({"run": run, "mode": mode, "ok": True, "bases": bases, "finished_at": finished_at}))
+    return path
+
+
+KYIV_MORNING = datetime(2026, 11, 15, 7, 0, tzinfo=ZoneInfo("Europe/Kyiv"))
+
+
+def test_after_sync_light_run_forces_the_calendar_day_since_it_finished(tmp_path):
+    latest = sync_result(tmp_path / "latest.json")
+    plan, reason = refresh.after_sync_plan(latest, KYIV_MORNING)
+    assert reason == ""
+    assert plan["day"] == "2026-11-15" and plan["bases"] == ["amg", "fenix"]
+    assert plan["fresh_since"] == datetime(2026, 11, 15, 6, 52, 55, tzinfo=ZoneInfo("Europe/Kyiv"))
+    night = sync_result(tmp_path / "night.json", finished_at="2026-11-15T02:45:00+02:00")
+    plan, _ = refresh.after_sync_plan(night, datetime(2026, 11, 15, 2, 46, tzinfo=ZoneInfo("Europe/Kyiv")))
+    assert plan["day"] == "2026-11-15"
+    with patch.object(refresh, "run", return_value=0) as run:
+        assert refresh.main(["--after-sync", str(latest), "--wait-sync", "21600", "--wait-lock", "21600",
+                             "--state-dir", str(tmp_path / "state")]) == 0
+    call = run.call_args.kwargs
+    assert call["force"] is True and call["day"] == "2026-11-15"
+    assert call["fresh_since"] == datetime.fromisoformat("2026-11-15T06:52:55+02:00")
+    assert call["wait_sync"] == 21600 and call["wait_lock"] == 21600
+    assert run.call_count == 1
+
+
+@pytest.mark.parametrize("mode", ["full", "refresh"])
+def test_after_sync_full_and_refresh_runs_are_left_to_their_own_refresh(tmp_path, mode, capsys):
+    latest = sync_result(tmp_path / "latest.json", mode=mode)
+    with patch.object(refresh, "run") as run:
+        assert refresh.main(["--after-sync", str(latest)]) == 0
+        run.assert_not_called()
+    assert "refreshes the fleet itself" in capsys.readouterr().out
+
+
+def test_after_sync_without_a_finished_base_does_nothing(tmp_path, capsys):
+    latest = sync_result(tmp_path / "latest.json", bases={"amg": {"ok": False}, "fenix": {"ok": False}})
+    with patch.object(refresh, "run") as run:
+        assert refresh.main(["--after-sync", str(latest)]) == 0
+        run.assert_not_called()
+    assert "finished no base" in capsys.readouterr().out
+    assert refresh.after_sync_plan(sync_result(latest, bases={}), KYIV_MORNING)[0] is None
+    one = sync_result(latest, bases={"amg": {"ok": False}, "fenix": {"ok": True}})
+    assert refresh.after_sync_plan(one, KYIV_MORNING)[0]["bases"] == ["fenix"]
+
+
+def test_after_sync_stale_or_unreadable_result_does_nothing(tmp_path):
+    stale = sync_result(tmp_path / "latest.json", finished_at="2026-11-12T02:45:00+02:00")
+    plan, reason = refresh.after_sync_plan(stale, KYIV_MORNING)
+    assert plan is None and "cycle 2026-11-12 is not current" in reason
+    (tmp_path / "broken.json").write_text("{")
+    assert refresh.after_sync_plan(tmp_path / "broken.json", KYIV_MORNING)[0] is None
+    assert refresh.after_sync_plan(tmp_path / "missing.json", KYIV_MORNING)[0] is None
+    with patch.object(refresh, "run") as run:
+        assert refresh.main(["--after-sync", str(stale)]) == 0
+        run.assert_not_called()
+
+
+def test_after_sync_refuses_options_that_choose_the_cycle(tmp_path):
+    latest = sync_result(tmp_path / "latest.json")
+    for extra in (["--force"], ["--cycle-date", "2026-11-15"], ["--only", "reco"], ["--check"]):
+        assert refresh.main(["--after-sync", str(latest), *extra]) == refresh.EXIT_ARGUMENTS
+
+
+def test_after_sync_same_result_twice_runs_once_and_a_late_sync_runs_again(tmp_path, capsys):
+    state_dir = tmp_path / "state"
+    latest = sync_result(tmp_path / "latest.json", finished_at="2026-11-15T02:45:00+02:00")
+    calls = []
+    with patch.object(refresh, "allowed_cycle_dates", return_value=("2026-11-14", "2026-11-15")), \
+            patch.object(refresh, "cycle_date", return_value="2026-11-14"), \
+            patch.object(refresh.subprocess, "run", side_effect=completing(calls)):
+        assert refresh.follow_sync(latest, root=tmp_path, state_dir=state_dir) == 0
+        first = json.loads((state_dir / "2026-11-15.json").read_text())
+        assert first["status"] == "complete" and {stage for stage, _ in calls} == set(refresh.STAGES)
+        calls.clear()
+        assert refresh.follow_sync(latest, root=tmp_path, state_dir=state_dir) == 0
+        assert calls == []
+        assert json.loads((state_dir / "2026-11-15.json").read_text())["run_id"] == first["run_id"]
+        assert "not forcing another one" in capsys.readouterr().out
+    with patch.object(refresh, "cycle_date", return_value="2026-11-15"), \
+            patch.object(refresh.subprocess, "run", side_effect=completing(calls)):
+        assert refresh.run(tmp_path, state_dir, wait_sync=21600, sync_lock=tmp_path / "run.lock") == 0
+        assert calls == []
+    sync_result(latest, finished_at=(datetime.now().astimezone() + refresh.timedelta(seconds=1)).isoformat())
+    with patch.object(refresh, "allowed_cycle_dates", return_value=(refresh.calendar_date(),)), \
+            patch.object(refresh.subprocess, "run", side_effect=completing(calls)):
+        assert refresh.follow_sync(latest, root=tmp_path, state_dir=state_dir) == 0
+    assert {stage for stage, _ in calls} == set(refresh.STAGES)
+
+
+def test_after_sync_follows_a_result_written_while_it_ran(tmp_path):
+    latest = sync_result(tmp_path / "latest.json", finished_at="2026-11-15T02:45:00+02:00")
+    seen = []
+
+    def fake_run(**kwargs):
+        seen.append(kwargs["fresh_since"].isoformat())
+        if len(seen) == 1:
+            sync_result(latest, finished_at="2026-11-15T03:30:00+02:00", run="r2")
+        return 0
+
+    with patch.object(refresh, "allowed_cycle_dates", return_value=("2026-11-14", "2026-11-15")), \
+            patch.object(refresh, "run", side_effect=fake_run):
+        assert refresh.follow_sync(latest, root=tmp_path, state_dir=tmp_path / "state") == 0
+    assert seen == ["2026-11-15T02:45:00+02:00", "2026-11-15T03:30:00+02:00"]
+
+
+def test_after_sync_failure_is_returned_for_the_restart_and_the_retry_resumes(tmp_path):
+    latest = sync_result(tmp_path / "latest.json", finished_at="2026-11-15T02:45:00+02:00")
+    state_dir = tmp_path / "state"
+    calls = []
+    fail = True
+
+    def invoke(command, **kwargs):
+        calls.append(command[2])
+        if command[2] == "procure" and fail:
+            return SimpleNamespace(returncode=1)
+        Path(command[-1]).write_text(json.dumps({"status": "complete"}))
+        return SimpleNamespace(returncode=0)
+
+    with patch.object(refresh, "allowed_cycle_dates", return_value=("2026-11-14", "2026-11-15")), \
+            patch.object(refresh.subprocess, "run", side_effect=invoke):
+        assert refresh.follow_sync(latest, root=tmp_path, state_dir=state_dir) == refresh.EXIT_FAILED
+        run_id = json.loads((state_dir / "2026-11-15.json").read_text())["run_id"]
+        fail = False
+        calls.clear()
+        assert refresh.follow_sync(latest, root=tmp_path, state_dir=state_dir) == 0
+    state = json.loads((state_dir / "2026-11-15.json").read_text())
+    assert state["run_id"] == run_id and state["status"] == "complete"
+    assert "nba_feedback" not in calls and "procure" in calls
+
+
+def test_after_sync_unit_follows_the_runner_result_and_the_timer_waits_for_a_running_sync():
+    root = Path(__file__).resolve().parents[1]
+    path = (root / "systemd/gba-ai-fleet-after-sync.path").read_text()
+    service = (root / "systemd/gba-ai-fleet-after-sync.service").read_text()
+    assert "PathChanged=/var/lib/gba-sync/latest.json" in path.splitlines()
+    assert "Unit=gba-ai-fleet-after-sync.service" in path.splitlines()
+    assert ("refresh_ai_fleet.py --after-sync /var/lib/gba-sync/latest.json --wait-sync 21600 --wait-lock 21600"
+            in service)
+    assert "--force" not in service

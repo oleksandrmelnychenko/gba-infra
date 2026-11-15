@@ -1,0 +1,14 @@
+[Unit]
+Description=GBA AI fleet refresh on the data of the finished 1C synchronization
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/projects/gba-infra
+ExecStart=/usr/bin/python3 /root/projects/gba-infra/scripts/refresh_ai_fleet.py --after-sync /var/lib/gba-sync/latest.json --wait-sync 21600 --wait-lock 21600
+TimeoutStartSec=23h
+Restart=on-failure
+RestartSec=5min
+UMask=0077

@@ -46,6 +46,21 @@ lock rule applies and `sync_wait.server_fallback` records why. The credential
 and the token are never printed. The runner's own forced refresh does not pass
 --wait-sync, so it never waits for itself.
 
+After the nightly synchronization. --after-sync <latest.json> is the entry
+point of gba-ai-fleet-after-sync.path, which fires when the runner writes its
+result file at the end of a run. Only a light run that brought at least one
+base is followed: full and refresh runs force their own refresh downstream, and
+a run with no base finished leaves the data as it was. The cycle is the Kyiv
+calendar date of `finished_at`; when that date is no longer an allowed cycle
+date (a stale file) nothing is done. The run is forced with --fresh-since
+`finished_at`, so a cycle that started after the synchronization finished, such
+as the 05:00 timer's run that waited for it, or an earlier after-sync run for
+the same result, is not repeated, and a failed one is resumed. The file is read
+again after the run: a result written meanwhile, whose own path trigger is lost
+while this service is still active, is followed in the same invocation. The
+05:00 timer remains the fallback for a night without a synchronization and
+waits for one that is still running.
+
 Single stages. --only <stage>[,<stage>] refreshes just the named stages again,
 under the same lock, health gate, unit runtime and persistence confirmation as
 the full cycle, with a refresh token of its own so nothing cached earlier is
@@ -464,6 +479,53 @@ def run(root: Path, state_dir: Path, *, force: bool = False, day: str | None = N
         return 0
 
 
+def after_sync_plan(latest: Path, now: datetime | None = None) -> tuple[dict | None, str]:
+    try:
+        result = json.loads(latest.read_text())
+    except (OSError, ValueError) as exc:
+        return None, f"cannot read {latest} ({type(exc).__name__}); nothing to do"
+    if not isinstance(result, dict):
+        return None, f"{latest} is not a synchronization result; nothing to do"
+    run_id, mode = result.get("run"), result.get("mode")
+    if mode != "light":
+        return None, f"synchronization run {run_id} is {mode!r}, not light; it refreshes the fleet itself"
+    bases = result.get("bases") if isinstance(result.get("bases"), dict) else {}
+    finished = [name for name, item in bases.items() if isinstance(item, dict) and item.get("ok") is True]
+    if not finished:
+        return None, f"synchronization run {run_id} finished no base; the data is unchanged"
+    try:
+        finished_at = parse_instant(result.get("finished_at"))
+    except (TypeError, ValueError):
+        finished_at = None
+    if finished_at is None:
+        return None, f"synchronization run {run_id} has no valid finished_at; nothing to do"
+    day = calendar_date(finished_at)
+    allowed = allowed_cycle_dates(now)
+    if day not in allowed:
+        return None, (f"synchronization run {run_id} finished {finished_at.isoformat()}; cycle {day} is not "
+                      f"current ({', '.join(allowed)}); nothing to do")
+    return {"run": run_id, "day": day, "fresh_since": finished_at, "finished_at": finished_at.isoformat(),
+            "bases": finished}, ""
+
+
+def follow_sync(latest: Path, **options) -> int:
+    handled: str | None = None
+    code = 0
+    while True:
+        plan, reason = after_sync_plan(latest)
+        if plan is None:
+            print(reason, flush=True)
+            return code
+        if plan["finished_at"] == handled:
+            return code
+        print(f"Synchronization run {plan['run']} ({', '.join(plan['bases'])}) finished {plan['finished_at']}; "
+              f"refreshing cycle {plan['day']} on its data", flush=True)
+        code = run(force=True, day=plan["day"], fresh_since=plan["fresh_since"], **options)
+        if code:
+            return code
+        handled = plan["finished_at"]
+
+
 def check(root: Path, state_dir: Path, *, day: str | None = None, imports: bool = True,
           only: tuple[str, ...] = ()) -> int:
     """Read-only report: health, the runtime each stage would use, state and lock. Starts nothing."""
@@ -546,7 +608,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--check", action="store_true", help="read-only report; starts nothing")
     parser.add_argument("--only", default="", metavar="STAGE[,STAGE]",
                         help="refresh only these stages again (" + ", ".join(STAGES) + "); the others are left alone")
+    parser.add_argument("--after-sync", type=Path, default=None, metavar="LATEST_JSON",
+                        help="refresh on the data of the synchronization recorded in this result file")
     args = parser.parse_args(argv)
+    if args.after_sync is not None:
+        clashing = [name for name, value in (("--force", args.force), ("--cycle-date", args.cycle_date),
+                                             ("--fresh-since", args.fresh_since), ("--check", args.check),
+                                             ("--only", args.only)) if value]
+        if clashing:
+            print(f"--after-sync decides the cycle itself; it cannot be combined with {', '.join(clashing)}",
+                  flush=True)
+            return EXIT_ARGUMENTS
+        return follow_sync(args.after_sync, root=args.root, state_dir=args.state_dir,
+                           wait_lock=args.wait_lock, wait_sync=args.wait_sync, sync_lock=args.sync_lock,
+                           sync_server=args.sync_server, sync_credential=args.sync_credential)
     try:
         only = parse_only(args.only)
     except ValueError as exc:
