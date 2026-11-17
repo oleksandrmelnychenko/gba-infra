@@ -112,6 +112,14 @@ def http_request(url: str, *, data: bytes | None = None, headers: dict | None = 
         return exc.code, exc.read()
 
 
+SESSION_START_TIMEOUT = 180
+
+
+def is_timeout(exc: BaseException) -> bool:
+    return isinstance(exc, TimeoutError) or (
+        isinstance(exc, urllib.error.URLError) and isinstance(exc.reason, TimeoutError))
+
+
 def parse_json(raw: bytes) -> dict:
     try:
         value = json.loads(raw)
@@ -326,9 +334,16 @@ class Runner:
         report: dict = {"ok": False}
         try:
             before = run_key((self.status().get("LastTerminalRun") or {}).get("PipelineRunId"))
-            code, accepted = self.call(
-                self.args.server, "/api/v1/uk/data/sync/start/session?" + urllib.parse.urlencode(query),
-                {}, operation=uuid.uuid4().hex)
+            try:
+                code, accepted = self.call(
+                    self.args.server, "/api/v1/uk/data/sync/start/session?" + urllib.parse.urlencode(query),
+                    {}, operation=uuid.uuid4().hex, timeout=SESSION_START_TIMEOUT)
+            except Exception as exc:
+                if not is_timeout(exc):
+                    raise
+                raise RunnerError(
+                    f"the start call got no answer within {SESSION_START_TIMEOUT} s; the server may still "
+                    f"admit the session, so check the synchronization status before starting it again") from exc
             if code != 200:
                 report.update(reason=f"the start call answered HTTP {code}",
                               body=json.dumps(accepted, ensure_ascii=False)[:1500])

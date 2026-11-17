@@ -151,6 +151,25 @@ def test_refused_start_is_reported_and_the_other_base_still_runs(stand):
     assert "HTTP 409" in latest(job)["bases"]["amg"]["reason"]
 
 
+@pytest.mark.parametrize("timeout", [TimeoutError("timed out"), runner.urllib.error.URLError(TimeoutError("timed out"))])
+def test_start_call_waits_longer_than_the_server_and_a_timeout_is_a_clear_runner_error(stand, timeout):
+    fake, job, _ = stand("light")
+    seen = []
+    def start(url, **kwargs):
+        if "/data/sync/start/session" in url:
+            seen.append(kwargs["timeout"])
+            if "forAmg=true" in url:
+                raise timeout
+        return fake(url, **kwargs)
+    with patch.object(runner, "http_request", side_effect=start):
+        assert job.run() == runner.EXIT_FAILED
+    assert seen == [runner.SESSION_START_TIMEOUT, runner.SESSION_START_TIMEOUT]
+    assert runner.SESSION_START_TIMEOUT == 180
+    result = latest(job)
+    assert "the start call got no answer within 180 s" in result["bases"]["amg"]["reason"]
+    assert result["bases"]["fenix"]["ok"] is True
+
+
 def test_login_file_survives_a_refused_credential_and_a_dry_run(stand):
     fake, job, login = stand("light", "--consume-login", token_code=401)
     assert execute(fake, job) == runner.EXIT_LOGIN
