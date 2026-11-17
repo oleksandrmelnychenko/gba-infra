@@ -118,6 +118,9 @@ def qa_environment(environment: dict, service: str) -> dict:
     return result
 
 
+QA_OWN_KEY_TARGETS = {'GbaNbaApi:ApiKey': 'GbaNbaApi__ApiKey', 'ProductsApi:ApiKey': 'ProductsApi__ApiKey'}
+
+
 def main() -> None:
     dev = json.loads(DEV_COMPOSE.read_text())
     dev_secrets = dev.get('secrets', {})
@@ -130,11 +133,22 @@ def main() -> None:
         source = dev['services'][dev_name]
         history_enabled = dev_name == 'data-concord' and str(
             source.get('environment', {}).get('ProductSourceHistory__Enabled', '')).lower() == 'true'
+        environment = qa_environment(source.get('environment', {}), dev_name)
         service_secrets = []
         history_secrets = set()
         for secret in source.get('secrets', []):
             target = secret['target']
             name = secret['source']
+            if target in QA_OWN_KEY_TARGETS:
+                value = environment.get(QA_OWN_KEY_TARGETS[target], '')
+                if not value:
+                    continue
+                qa_file = SECRETS_DIR / name
+                qa_file.write_text(value)
+                os.chmod(qa_file, 0o600)
+                secrets[name] = {'file': str(qa_file), 'name': f'gba-qa_{name}'}
+                service_secrets.append({'source': name, 'target': target})
+                continue
             if 'onec' in target.lower() or 'onec' in name.lower():
                 if not history_enabled or target not in HISTORY_READONLY_TARGETS:
                     continue
@@ -174,7 +188,7 @@ def main() -> None:
         service = {
             'image': source['image'],
             'container_name': qa_name,
-            'environment': qa_environment(source.get('environment', {}), dev_name),
+            'environment': environment,
             'secrets': service_secrets,
             'volumes': volumes,
             'ports': [{'host_ip': '127.0.0.1', 'published': host_port, 'target': container_port, 'protocol': 'tcp'}],

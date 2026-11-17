@@ -56,6 +56,28 @@ class ProductHistoryQaTests(unittest.TestCase):
         self.assertEqual('qa', api['GbaNbaApi__SourceEnvironment'])
         self.assertNotIn('GbaNbaApi__Key', api)
 
+    def test_ai_key_secret_files_carry_qa_keys_not_dev_files(self):
+        root = Path(self.temporary.name)
+        dev_nba = root / 'dev-nba'
+        dev_nba.write_text('dev-secret')
+        dev_products = root / 'dev-products'
+        dev_products.write_text('dev-products-secret')
+        self.dev['secrets'].update({'nba': {'file': str(dev_nba)}, 'products': {'file': str(dev_products)}})
+        self.dev['services']['data-concord']['secrets'] += [
+            {'source': 'nba', 'target': 'GbaNbaApi:ApiKey'}, {'source': 'products', 'target': 'ProductsApi:ApiKey'}]
+        source = self.dev['services']['data-concord']['environment']
+        source.update({'GbaNbaApi__Url': 'http://host.docker.internal:8002', 'GbaNbaApi__ApiKey': 'dev-secret'})
+        folder = generator.STATE_DIR / 'nba'
+        folder.mkdir(parents=True)
+        (folder / 'api-key').write_text('qa-fixture-secret')
+        result = self.generate()
+        targets = {x['target']: x['source'] for x in result['services']['data-concord-qa']['secrets']}
+        self.assertNotIn('ProductsApi:ApiKey', targets)
+        nba_file = Path(result['secrets'][targets['GbaNbaApi:ApiKey']]['file'])
+        self.assertNotEqual(dev_nba, nba_file)
+        self.assertEqual('qa-fixture-secret', nba_file.read_text())
+        self.assertEqual('dev-secret', dev_nba.read_text())
+
     def test_dev_ai_fleet_state_is_not_carried_to_qa(self):
         source = self.dev['services']['data-concord']
         source['environment']['GBA_AI_FLEET_STATE_DIRECTORY'] = '/app/AiFleet'
