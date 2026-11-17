@@ -114,6 +114,11 @@ services:
   data-analytics:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      SalesSupplierProfitProjection__Enabled: "true"
+      SalesSupplierProfitProjection__BackfillEnabled: "true"
+      SalesSupplierProfitProjection__CompareMonths: "2025-01..2026-11"
+      SalesSupplierProfitProjection__CompareWindows: "2026-01..2026-10"
+      SalesSupplierProfitProjection__CompareReports: "2026-01..2026-10;2026-10"
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
       Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-false}"
