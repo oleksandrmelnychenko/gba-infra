@@ -24,7 +24,7 @@ LOCAL_CONNECTION_TARGETS = {
 }
 SERVICES = {
     'data-concord': ('data-concord-qa', '35996', 35981, '6g'),
-    'data-analytics': ('data-analytics-qa', '35997', 35982, '3g'),
+    'data-analytics': ('data-analytics-qa', '35997', 35982, '8g'),
 }
 DATA_BIND_TARGETS = {'/app/Data', '/app/Images', '/app/Logs'}
 HISTORY_READONLY_TARGETS = {
