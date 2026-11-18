@@ -122,6 +122,7 @@ services:
       SalesSupplierProfitProjection__CompareTag: "preview-5"
       SalesSupplierProfitProjection__ComparePreviews: "2026-01..2026-10;2026-10"
       SalesSupplierProfitProjection__CompareSavedVariants: "true"
+      SalesSupplierProfitProjection__ReadEnabled: "true"
       StockPeriodAnchors__Enabled: "true"
       StockPeriodAnchors__BackfillEnabled: "true"
       StockPeriodAnchors__CompareMonths: "2025-01..2026-11"

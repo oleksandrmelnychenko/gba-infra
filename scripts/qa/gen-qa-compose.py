@@ -39,6 +39,7 @@ FORCED_ENVIRONMENT = {
     'SchedulerTasks__SchedulingEnabled': 'false',
     'GBA_CONTROL_DATABASE_NAME': 'ConcordDb_V5_QA',
     'OneCExport__Environment': 'qa',
+    'SalesSupplierProfitProjection__ReadEnabled': os.environ.get('QA_SUPPLIER_PROFIT_READ_ENABLED', 'false'),
 }
 
 
