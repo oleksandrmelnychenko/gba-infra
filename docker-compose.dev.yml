@@ -119,7 +119,7 @@ services:
       SalesSupplierProfitProjection__CompareMonths: "2025-01..2026-11"
       SalesSupplierProfitProjection__CompareWindows: "2026-01..2026-10"
       SalesSupplierProfitProjection__CompareReports: "2026-01..2026-10;2026-10"
-      SalesSupplierProfitProjection__CompareTag: "preview-3"
+      SalesSupplierProfitProjection__CompareTag: "preview-4"
       SalesSupplierProfitProjection__ComparePreviews: "2026-01..2026-10;2026-10"
       SalesSupplierProfitProjection__CompareSavedVariants: "true"
       StockPeriodAnchors__Enabled: "true"
