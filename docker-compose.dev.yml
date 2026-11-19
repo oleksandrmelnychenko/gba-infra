@@ -128,6 +128,7 @@ services:
       StockPeriodAnchors__CompareMonths: "2025-01..2026-11"
       StockPeriodAnchors__CompareWindows: "2026-09..2026-10;2026-01..2026-10"
       StockPeriodAnchors__CompareSavedVariants: "true"
+      StockPeriodAnchors__ReadEnabled: "true"
       Security__JwtIssuer: "ConcordCRM"
       Security__JwtAudience: "https://gba-api-dev.85.17.167.167.nip.io/"
       Security__AcceptLegacyHs256Tokens: "${GBA_ACCEPT_LEGACY_HS256_TOKENS:-false}"
